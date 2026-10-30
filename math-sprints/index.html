@@ -1,0 +1,3263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+<meta name="description" content="Math Sprints: a times-table and division training game for kids. Works offline, no tracking.">
+<meta name="theme-color" content="#7dd3fc">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M36 2 L10 36 H26 L20 62 L54 24 H37 L44 2 Z' fill='%23facc15' stroke='%231e293b' stroke-width='3' stroke-linejoin='round'/%3E%3C/svg%3E">
+<title>Math Sprints ⚡</title>
+<style>
+/* =====================================================================
+   0. FONT STACKS & GLOBAL TOKENS (system fonts only, no downloads)
+   ===================================================================== */
+:root {
+  --font-rounded: ui-rounded, "SF Pro Rounded", "Nunito", "Varela Round", "Quicksand", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-arcade: "Orbitron", "Audiowide", "OCR A Extended", "Eurostile", "Consolas", "Lucida Console", ui-monospace, "Courier New", monospace;
+  --font-storybook: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, "Times New Roman", serif;
+  --font-mono: "Cascadia Code", "SF Mono", "Consolas", "Lucida Console", ui-monospace, "Courier New", monospace;
+  --font-chunky: "Arial Black", "Segoe UI Black", "Helvetica Neue", Impact, system-ui, sans-serif;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --ease-pop: cubic-bezier(.34, 1.56, .64, 1);
+  --leaf-border: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect x='6' y='6' width='36' height='36' rx='9' fill='none' stroke='%232f6b1f' stroke-width='3'/%3E%3Cg fill='%2366bb3f' stroke='%232f6b1f' stroke-width='.8'%3E%3Cellipse cx='20' cy='4.5' rx='4.6' ry='2.3' transform='rotate(-25 20 4.5)'/%3E%3Cellipse cx='28' cy='7.5' rx='4.6' ry='2.3' transform='rotate(25 28 7.5)'/%3E%3Cellipse cx='20' cy='43.5' rx='4.6' ry='2.3' transform='rotate(25 20 43.5)'/%3E%3Cellipse cx='28' cy='40.5' rx='4.6' ry='2.3' transform='rotate(-25 28 40.5)'/%3E%3Cellipse cx='4.5' cy='20' rx='2.3' ry='4.6' transform='rotate(25 4.5 20)'/%3E%3Cellipse cx='7.5' cy='28' rx='2.3' ry='4.6' transform='rotate(-25 7.5 28)'/%3E%3Cellipse cx='43.5' cy='20' rx='2.3' ry='4.6' transform='rotate(-25 43.5 20)'/%3E%3Cellipse cx='40.5' cy='28' rx='2.3' ry='4.6' transform='rotate(25 40.5 28)'/%3E%3C/g%3E%3Cg fill='%239be15d' stroke='%232f6b1f' stroke-width='.8'%3E%3Cellipse cx='7' cy='7' rx='5.5' ry='2.8' transform='rotate(45 7 7)'/%3E%3Cellipse cx='41' cy='7' rx='5.5' ry='2.8' transform='rotate(-45 41 7)'/%3E%3Cellipse cx='7' cy='41' rx='5.5' ry='2.8' transform='rotate(-45 7 41)'/%3E%3Cellipse cx='41' cy='41' rx='5.5' ry='2.8' transform='rotate(45 41 41)'/%3E%3C/g%3E%3Cg fill='%23f472b6'%3E%3Ccircle cx='11' cy='3.5' r='1.6'/%3E%3Ccircle cx='44.5' cy='37' r='1.6'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* =====================================================================
+   1. THEMES — every theme is a set of custom properties, so nested
+      previews (Shop cards) render correctly inside another theme.
+   ===================================================================== */
+[data-theme="sunny"] {
+  --bg: radial-gradient(circle at 88% 4%, #fff9c4 0 8%, rgba(255,249,196,0) 22%), linear-gradient(180deg, #7dd3fc 0%, #bae6fd 48%, #fef3c7 100%);
+  --bg-solid: #bae6fd;
+  --ink: #1e293b; --ink-soft: #334155; --ink-shadow: 0 2px 0 rgba(255,255,255,.55);
+  --surface: #ffffff; --surface-2: #eef2f7; --surface-ink: #1e293b; --surface-border: rgba(30,41,59,.12);
+  --surface-shadow: 0 6px 0 rgba(30,41,59,.12), 0 14px 26px rgba(30,41,59,.10);
+  --panel-border: 3px solid rgba(30,41,59,.08); --panel-border-image: none; --panel-bg-clip: border-box;
+  --card-border: 3px solid rgba(30,41,59,.08); --card-border-image: none;
+  --radius: 22px; --radius-sm: 16px; --pill: 999px;
+  --accent: #ff8a00; --accent-ink: #ffffff; --accent-text: #c2410c;
+  --accent-2: #8b5cf6; --accent-2-ink: #ffffff;
+  --good: #16a34a; --good-text: #15803d; --good-soft: #dcfce7; --good-ink: #ffffff;
+  --bad: #e11d48; --bad-text: #be123c; --bad-soft: #ffe4e6; --warn: #f59e0b; --star: #f59e0b; --ice: #0ea5e9;
+  --chip-bg: #ffffff; --chip-ink: #1e293b;
+  --btn-border: 0; --btn-press: translateY(4px);
+  --btn-shadow: 0 5px 0 #c2410c; --btn-shadow-pressed: 0 1px 0 #c2410c;
+  --btn-alt-shadow: 0 5px 0 #6d28d9; --btn-alt-shadow-pressed: 0 1px 0 #6d28d9;
+  --btn-good-shadow: 0 5px 0 #15803d; --btn-good-shadow-pressed: 0 1px 0 #15803d;
+  --btn-danger-shadow: 0 5px 0 #9f1239; --btn-danger-shadow-pressed: 0 1px 0 #9f1239;
+  --font-ui: var(--font-rounded); --font-display: var(--font-rounded); --font-num: var(--font-rounded);
+  --display-case: none; --display-track: 0; --display-glow: none; --display-style: normal;
+  --eq-ink: #1e293b; --answer-bg: #fff7ed; --answer-border: #fdba74;
+  --keypad-bg: transparent; --keypad-border: 0; --keypad-border-image: none; --keypad-bg-clip: border-box;
+  --key-bg: linear-gradient(180deg, #ffffff, #f1f5f9); --key-bg-pressed: linear-gradient(180deg, #f8fafc, #e2e8f0);
+  --key-ink: #1e293b; --key-ink-pressed: #1e293b; --key-border: 0; --key-radius: 22px;
+  --key-shadow: 0 6px 0 #cbd5e1, 0 12px 16px rgba(30,41,59,.14);
+  --key-shadow-pressed: 0 0 0 #cbd5e1, 0 3px 6px rgba(30,41,59,.14);
+  --key-press: translateY(6px); --key-text-shadow: none; --key-filter: none; --key-filter-pressed: none;
+  --key-ok-bg: linear-gradient(180deg, #4ade80, #22c55e); --key-ok-bg-pressed: linear-gradient(180deg, #22c55e, #16a34a);
+  --key-ok-ink: #ffffff; --key-ok-ink-pressed: #ffffff; --key-ok-text-shadow: 0 2px 0 rgba(0,0,0,.18);
+  --key-ok-shadow: 0 6px 0 #15803d, 0 12px 16px rgba(21,128,61,.25); --key-ok-shadow-pressed: 0 0 0 #15803d, 0 3px 6px rgba(21,128,61,.25);
+  --key-del-bg: linear-gradient(180deg, #fda4af, #fb7185); --key-del-bg-pressed: linear-gradient(180deg, #fb7185, #f43f5e);
+  --key-del-ink: #ffffff; --key-del-ink-pressed: #ffffff; --key-del-text-shadow: 0 2px 0 rgba(0,0,0,.18);
+  --key-del-shadow: 0 6px 0 #be123c, 0 12px 16px rgba(190,18,60,.22); --key-del-shadow-pressed: 0 0 0 #be123c, 0 3px 6px rgba(190,18,60,.22);
+  --key-star: none; --key-star-bg: none; --key-ok-star-bg: none; --key-del-star-bg: none;
+  --key-corners: none; --key-corner-color: transparent;
+  --confetti: #f43f5e,#f59e0b,#22c55e,#3b82f6,#a855f7,#facc15;
+  --meta-color: #7dd3fc;
+}
+
+[data-theme="cosmic"] {
+  --bg: radial-gradient(ellipse 120% 70% at 50% 0%, #2a1b6e 0%, #160f45 45%, #0a0624 75%, #05030f 100%);
+  --bg-solid: #120c3a;
+  --ink: #e0e7ff; --ink-soft: #c7d2fe; --ink-shadow: 0 0 10px rgba(103,232,249,.55);
+  --surface: rgba(28,20,88,.88); --surface-2: rgba(67,56,202,.38); --surface-ink: #e0e7ff; --surface-border: rgba(103,232,249,.6);
+  --surface-shadow: 0 0 0 1px rgba(103,232,249,.25), 0 0 18px rgba(103,232,249,.28), inset 0 0 22px rgba(129,140,248,.18);
+  --panel-border: 2px solid rgba(103,232,249,.6); --panel-border-image: none; --panel-bg-clip: border-box;
+  --card-border: 2px solid rgba(103,232,249,.6); --card-border-image: none;
+  --radius: 18px; --radius-sm: 14px; --pill: 999px;
+  --accent: #f472b6; --accent-ink: #1a0b2e; --accent-text: #f9a8d4;
+  --accent-2: #67e8f9; --accent-2-ink: #06202a;
+  --good: #a3e635; --good-text: #bef264; --good-soft: rgba(163,230,53,.16); --good-ink: #1a2e05;
+  --bad: #fb7185; --bad-text: #fda4af; --bad-soft: rgba(251,113,133,.18); --warn: #fde047; --star: #fde047; --ice: #7dd3fc;
+  --chip-bg: rgba(28,20,88,.92); --chip-ink: #e0e7ff;
+  --btn-border: 0; --btn-press: scale(.97);
+  --btn-shadow: 0 0 0 2px rgba(255,255,255,.55), 0 0 18px rgba(244,114,182,.85); --btn-shadow-pressed: 0 0 0 2px #ffffff, 0 0 30px rgba(244,114,182,1);
+  --btn-alt-shadow: 0 0 0 2px rgba(255,255,255,.55), 0 0 18px rgba(103,232,249,.85); --btn-alt-shadow-pressed: 0 0 0 2px #ffffff, 0 0 30px rgba(103,232,249,1);
+  --btn-good-shadow: 0 0 0 2px rgba(255,255,255,.55), 0 0 18px rgba(163,230,53,.85); --btn-good-shadow-pressed: 0 0 0 2px #ffffff, 0 0 30px rgba(163,230,53,1);
+  --btn-danger-shadow: 0 0 0 2px rgba(255,255,255,.55), 0 0 18px rgba(251,113,133,.85); --btn-danger-shadow-pressed: 0 0 0 2px #ffffff, 0 0 30px rgba(251,113,133,1);
+  --font-ui: var(--font-arcade); --font-display: var(--font-arcade); --font-num: var(--font-arcade);
+  --display-case: uppercase; --display-track: .08em; --display-style: normal;
+  --display-glow: 0 0 6px rgba(103,232,249,.9), 0 0 18px rgba(103,232,249,.45);
+  --eq-ink: #ecfeff; --answer-bg: rgba(8,47,73,.7); --answer-border: #67e8f9;
+  --keypad-bg: transparent; --keypad-border: 0; --keypad-border-image: none; --keypad-bg-clip: border-box;
+  --key-bg: transparent; --key-bg-pressed: transparent;
+  --key-ink: #0b1030; --key-ink-pressed: #0b1030; --key-border: 0; --key-radius: 16px;
+  --key-shadow: none; --key-shadow-pressed: none; --key-press: none;
+  --key-text-shadow: 0 0 2px rgba(255,255,255,.95);
+  --key-filter: drop-shadow(0 0 5px rgba(103,232,249,.95)) drop-shadow(0 0 12px rgba(59,130,246,.55));
+  --key-filter-pressed: drop-shadow(0 0 8px #ffffff) drop-shadow(0 0 22px rgba(103,232,249,1));
+  --key-ok-bg: transparent; --key-ok-bg-pressed: transparent; --key-ok-ink: #0b1030; --key-ok-ink-pressed: #0b1030; --key-ok-text-shadow: 0 0 2px #ffffff;
+  --key-ok-shadow: none; --key-ok-shadow-pressed: none;
+  --key-del-bg: transparent; --key-del-bg-pressed: transparent; --key-del-ink: #0b1030; --key-del-ink-pressed: #0b1030; --key-del-text-shadow: 0 0 2px #ffffff;
+  --key-del-shadow: none; --key-del-shadow-pressed: none;
+  --key-star: block;
+  --key-star-bg: radial-gradient(circle at 50% 58%, #ffffff 0%, #e0fbff 24%, #67e8f9 58%, #3b82f6 100%);
+  --key-ok-star-bg: radial-gradient(circle at 50% 58%, #ffffff 0%, #f7fee7 24%, #a3e635 58%, #4d7c0f 100%);
+  --key-del-star-bg: radial-gradient(circle at 50% 58%, #ffffff 0%, #fdf2f8 24%, #f472b6 58%, #9d174d 100%);
+  --key-corners: none; --key-corner-color: transparent;
+  --confetti: #67e8f9,#f472b6,#a3e635,#fde047,#c4b5fd,#ffffff;
+  --meta-color: #120c3a;
+}
+
+[data-theme="forest"] {
+  --wood-grain: radial-gradient(ellipse 9px 5px at 26% 66%, rgba(74,40,12,.6) 0 45%, rgba(74,40,12,.18) 60%, rgba(74,40,12,0) 72%), radial-gradient(ellipse 6px 3px at 78% 28%, rgba(74,40,12,.45) 0 45%, rgba(74,40,12,0) 70%), repeating-linear-gradient(176deg, rgba(255,236,200,.10) 0 2px, rgba(255,236,200,0) 2px 9px), repeating-linear-gradient(183deg, rgba(70,35,10,.22) 0 1px, rgba(70,35,10,0) 1px 13px);
+  --bg: radial-gradient(ellipse 70% 45% at 15% 8%, rgba(255,255,190,.30), rgba(255,255,190,0) 70%), radial-gradient(ellipse 55% 35% at 90% 35%, rgba(255,255,170,.16), rgba(255,255,170,0) 70%), linear-gradient(180deg, #63b83a 0%, #4a962b 45%, #2b6a1d 100%);
+  --bg-solid: #4a962b;
+  --ink: #fefce8; --ink-soft: #ecfccb; --ink-shadow: 0 2px 0 rgba(20,50,10,.6), 0 0 12px rgba(20,50,10,.4);
+  --surface: #fdf6e3; --surface-2: #efe2bd; --surface-ink: #3b2a12; --surface-border: #2f6b1f;
+  --surface-shadow: 0 8px 18px rgba(20,50,10,.35);
+  --panel-border: 12px solid transparent; --panel-border-image: var(--leaf-border) 16 / 12px round; --panel-bg-clip: padding-box;
+  --card-border: 9px solid transparent; --card-border-image: var(--leaf-border) 16 / 9px round;
+  --radius: 20px; --radius-sm: 14px; --pill: 999px;
+  --accent: #c2410c; --accent-ink: #fff7ed; --accent-text: #9a3412;
+  --accent-2: #4d7c0f; --accent-2-ink: #f7fee7;
+  --good: #15803d; --good-text: #166534; --good-soft: #dcfce7; --good-ink: #f0fdf4;
+  --bad: #b91c1c; --bad-text: #991b1b; --bad-soft: #fee2e2; --warn: #d97706; --star: #b45309; --ice: #0369a1;
+  --chip-bg: #fdf6e3; --chip-ink: #3b2a12;
+  --btn-border: 0; --btn-press: translateY(4px);
+  --btn-shadow: 0 5px 0 #7c2d12; --btn-shadow-pressed: 0 1px 0 #7c2d12;
+  --btn-alt-shadow: 0 5px 0 #365314; --btn-alt-shadow-pressed: 0 1px 0 #365314;
+  --btn-good-shadow: 0 5px 0 #14532d; --btn-good-shadow-pressed: 0 1px 0 #14532d;
+  --btn-danger-shadow: 0 5px 0 #7f1d1d; --btn-danger-shadow-pressed: 0 1px 0 #7f1d1d;
+  --font-ui: var(--font-rounded); --font-display: var(--font-storybook); --font-num: var(--font-rounded);
+  --display-case: none; --display-track: .01em; --display-glow: none; --display-style: italic;
+  --eq-ink: #3b2a12; --answer-bg: #fffbeb; --answer-border: #a0652d;
+  --keypad-bg: rgba(24,58,16,.5); --keypad-border: 12px solid transparent; --keypad-border-image: var(--leaf-border) 16 / 12px round; --keypad-bg-clip: padding-box;
+  --key-bg: var(--wood-grain), linear-gradient(180deg, #c98d4b 0%, #a86b31 55%, #8a5424 100%);
+  --key-bg-pressed: var(--wood-grain), linear-gradient(180deg, #b77d3f 0%, #96602b 55%, #7a4a1f 100%);
+  --key-ink: #3b220c; --key-ink-pressed: #2a1806; --key-border: 3px solid #5b3714; --key-radius: 14px;
+  --key-shadow: 0 6px 0 #4a2c0f, 0 10px 14px rgba(20,40,10,.35), inset 0 2px 0 rgba(255,225,180,.35);
+  --key-shadow-pressed: 0 0 0 #4a2c0f, 0 3px 6px rgba(20,40,10,.35), inset 0 2px 8px rgba(40,20,5,.45);
+  --key-press: translateY(6px);
+  --key-text-shadow: 0 1px 0 rgba(255,232,190,.6), 0 -1px 0 rgba(40,20,5,.45);
+  --key-filter: none; --key-filter-pressed: none;
+  --key-ok-bg: var(--wood-grain), linear-gradient(180deg, #84b84f 0%, #5f8f30 60%, #4a7224 100%);
+  --key-ok-bg-pressed: var(--wood-grain), linear-gradient(180deg, #73a443 0%, #527d29 60%, #3f621e 100%);
+  --key-ok-ink: #fefce8; --key-ok-ink-pressed: #fefce8; --key-ok-text-shadow: 0 -1px 0 rgba(0,0,0,.45), 0 1px 0 rgba(255,255,255,.2);
+  --key-ok-shadow: 0 6px 0 #29470f, 0 10px 14px rgba(20,40,10,.35), inset 0 2px 0 rgba(230,255,200,.35);
+  --key-ok-shadow-pressed: 0 0 0 #29470f, 0 3px 6px rgba(20,40,10,.35), inset 0 2px 8px rgba(10,30,5,.45);
+  --key-del-bg: var(--wood-grain), linear-gradient(180deg, #c8744a 0%, #a5532f 60%, #8a4023 100%);
+  --key-del-bg-pressed: var(--wood-grain), linear-gradient(180deg, #b5653e 0%, #924726 60%, #77361d 100%);
+  --key-del-ink: #fff7ed; --key-del-ink-pressed: #fff7ed; --key-del-text-shadow: 0 -1px 0 rgba(0,0,0,.45), 0 1px 0 rgba(255,255,255,.2);
+  --key-del-shadow: 0 6px 0 #5c2410, 0 10px 14px rgba(20,40,10,.35), inset 0 2px 0 rgba(255,215,190,.35);
+  --key-del-shadow-pressed: 0 0 0 #5c2410, 0 3px 6px rgba(20,40,10,.35), inset 0 2px 8px rgba(40,10,5,.45);
+  --key-star: none; --key-star-bg: none; --key-ok-star-bg: none; --key-del-star-bg: none;
+  --key-corners: none; --key-corner-color: transparent;
+  --confetti: #84cc16,#22c55e,#facc15,#f97316,#a16207,#fef08a;
+  --meta-color: #4a962b;
+}
+
+[data-theme="synth"] {
+  --bg: linear-gradient(180deg, #14032b 0%, #2b0b4a 32%, #5b1170 58%, #b0175f 82%, #ff2e97 100%);
+  --bg-solid: #2b0b4a;
+  --ink: #fdf4ff; --ink-soft: #f5d0fe; --ink-shadow: 0 0 10px rgba(255,46,151,.75);
+  --surface: rgba(22,4,44,.9); --surface-2: rgba(91,17,112,.6); --surface-ink: #fdf4ff; --surface-border: #22d3ee;
+  --surface-shadow: 0 0 0 2px rgba(34,211,238,.85), 0 0 18px rgba(34,211,238,.35), 5px 5px 0 rgba(255,46,151,.9);
+  --panel-border: 0; --panel-border-image: none; --panel-bg-clip: border-box;
+  --card-border: 0; --card-border-image: none;
+  --radius: 4px; --radius-sm: 3px; --pill: 4px;
+  --accent: #ff2e97; --accent-ink: #ffffff; --accent-text: #ff7ab8;
+  --accent-2: #22d3ee; --accent-2-ink: #07121a;
+  --good: #4ade80; --good-text: #86efac; --good-soft: rgba(74,222,128,.16); --good-ink: #052e16;
+  --bad: #ff4d6d; --bad-text: #ff8fa3; --bad-soft: rgba(255,77,109,.18); --warn: #ffd166; --star: #ffd166; --ice: #67e8f9;
+  --chip-bg: rgba(22,4,44,.92); --chip-ink: #fdf4ff;
+  --btn-border: 2px solid #ffffff; --btn-press: translate(3px, 3px);
+  --btn-shadow: 4px 4px 0 #22d3ee; --btn-shadow-pressed: 1px 1px 0 #22d3ee;
+  --btn-alt-shadow: 4px 4px 0 #ff2e97; --btn-alt-shadow-pressed: 1px 1px 0 #ff2e97;
+  --btn-good-shadow: 4px 4px 0 #22d3ee; --btn-good-shadow-pressed: 1px 1px 0 #22d3ee;
+  --btn-danger-shadow: 4px 4px 0 #22d3ee; --btn-danger-shadow-pressed: 1px 1px 0 #22d3ee;
+  --font-ui: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-chunky); --font-num: var(--font-mono);
+  --display-case: uppercase; --display-track: .04em; --display-style: italic;
+  --display-glow: 0 0 10px rgba(255,46,151,.85), 2px 2px 0 rgba(34,211,238,.9);
+  --eq-ink: #fdf4ff; --answer-bg: rgba(34,211,238,.12); --answer-border: #22d3ee;
+  --keypad-bg: transparent; --keypad-border: 0; --keypad-border-image: none; --keypad-bg-clip: border-box;
+  --key-bg: linear-gradient(rgba(34,211,238,.16) 1px, rgba(34,211,238,0) 1px) 0 0 / 100% 11px, linear-gradient(90deg, rgba(34,211,238,.16) 1px, rgba(34,211,238,0) 1px) 0 0 / 11px 100%, linear-gradient(180deg, rgba(43,11,74,.94), rgba(18,3,36,.97));
+  --key-bg-pressed: #ff2e97;
+  --key-ink: #67e8f9; --key-ink-pressed: #ffffff; --key-border: 0; --key-radius: 3px;
+  --key-shadow: inset 0 0 0 2px #22d3ee, 0 0 12px rgba(34,211,238,.35);
+  --key-shadow-pressed: inset 0 0 0 2px #ffffff, 0 0 22px rgba(255,46,151,.9);
+  --key-press: translateY(1px);
+  --key-text-shadow: 0 0 8px rgba(34,211,238,.95), 0 0 2px #ffffff;
+  --key-filter: none; --key-filter-pressed: none;
+  --key-ok-bg: var(--key-bg); --key-ok-bg-pressed: #4ade80; --key-ok-ink: #4ade80; --key-ok-ink-pressed: #052e16;
+  --key-ok-text-shadow: 0 0 8px rgba(74,222,128,.95); --key-ok-shadow: inset 0 0 0 2px #4ade80, 0 0 12px rgba(74,222,128,.4); --key-ok-shadow-pressed: inset 0 0 0 2px #ffffff, 0 0 22px rgba(74,222,128,.9);
+  --key-del-bg: var(--key-bg); --key-del-bg-pressed: #ff2e97; --key-del-ink: #ff7ab8; --key-del-ink-pressed: #ffffff;
+  --key-del-text-shadow: 0 0 8px rgba(255,46,151,.95); --key-del-shadow: inset 0 0 0 2px #ff2e97, 0 0 12px rgba(255,46,151,.4); --key-del-shadow-pressed: inset 0 0 0 2px #ffffff, 0 0 22px rgba(255,46,151,.9);
+  --key-star: none; --key-star-bg: none; --key-ok-star-bg: none; --key-del-star-bg: none;
+  --key-corners: block; --key-corner-color: #ff2e97;
+  --confetti: #ff2e97,#22d3ee,#ffd166,#c084fc,#ffffff,#4ade80;
+  --meta-color: #2b0b4a;
+}
+
+/* =====================================================================
+   2. BASE
+   ===================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; overscroll-behavior: none; }
+body {
+  background: var(--bg-solid);
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  touch-action: manipulation;
+  line-height: 1.25;
+}
+[data-theme] { font-family: var(--font-ui); color: var(--ink); }
+button { font: inherit; color: inherit; margin: 0; }
+button, .key, .chip, .level-card, .wallet, .tab {
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation;
+}
+:focus { outline: none; }
+:focus-visible { outline: 4px solid var(--accent-2); outline-offset: 3px; }
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+[hidden] { display: none !important; }
+.display { font-family: var(--font-display); text-transform: var(--display-case); letter-spacing: var(--display-track); font-style: var(--display-style); }
+
+/* =====================================================================
+   3. APP SHELL & THEME DECOR
+   ===================================================================== */
+.app { position: relative; width: 100%; height: 100vh; height: 100dvh; overflow: hidden; background: var(--bg); isolation: isolate; }
+.decor { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.decor > div { position: absolute; inset: 0; display: none; }
+[data-theme="sunny"] .d-sunny, [data-theme="cosmic"] .d-cosmic, [data-theme="forest"] .d-forest, [data-theme="synth"] .d-synth { display: block; }
+
+.d-sunny .cloud { position: absolute; left: 0; width: 150px; height: 46px; background: #ffffff; border-radius: 40px; opacity: .9; animation: drift 80s linear infinite; }
+.d-sunny .cloud::before, .d-sunny .cloud::after { content: ""; position: absolute; background: #ffffff; border-radius: 50%; }
+.d-sunny .cloud::before { width: 64px; height: 64px; left: 20px; top: -30px; }
+.d-sunny .cloud::after { width: 84px; height: 84px; left: 56px; top: -44px; }
+.d-sunny .c1 { top: 9%; --s: 1; animation-duration: 75s; animation-delay: -20s; }
+.d-sunny .c2 { top: 34%; --s: .65; opacity: .75; animation-duration: 105s; animation-delay: -70s; }
+.d-sunny .c3 { top: 70%; --s: .85; opacity: .6; animation-duration: 90s; animation-delay: -45s; }
+@keyframes drift { from { transform: translateX(-60vw) scale(var(--s, 1)); } to { transform: translateX(160vw) scale(var(--s, 1)); } }
+
+.d-cosmic .stars { position: absolute; inset: 0; background-image:
+  radial-gradient(1.5px 1.5px at 20px 30px, #ffffff 50%, rgba(255,255,255,0) 51%),
+  radial-gradient(1px 1px at 120px 80px, #c7d2fe 50%, rgba(255,255,255,0) 51%),
+  radial-gradient(2px 2px at 60px 150px, #ffffff 50%, rgba(255,255,255,0) 51%),
+  radial-gradient(1px 1px at 170px 190px, #a5f3fc 50%, rgba(255,255,255,0) 51%),
+  radial-gradient(1.5px 1.5px at 90px 225px, #ffffff 50%, rgba(255,255,255,0) 51%);
+  background-size: 200px 240px; }
+.d-cosmic .stars.s2 { background-size: 330px 310px; background-position: 60px 40px; opacity: .8; animation: twinkle 3.6s ease-in-out infinite alternate; }
+@keyframes twinkle { from { opacity: .2; } to { opacity: .95; } }
+.d-cosmic .planet { position: absolute; width: 140px; height: 140px; right: -40px; top: 16%; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #f9a8d4, #a855f7 55%, #3b0764 100%); box-shadow: 0 0 40px rgba(168,85,247,.55); opacity: .75; }
+.d-cosmic .planet::after { content: ""; position: absolute; left: -32%; top: 38%; width: 164%; height: 24%; border-radius: 50%; border: 4px solid rgba(253,224,71,.7); transform: rotate(-18deg); }
+.d-cosmic .comet { position: absolute; left: -20%; top: 8%; width: 120px; height: 2px; background: linear-gradient(90deg, rgba(255,255,255,0), #ffffff); transform: rotate(18deg); animation: comet 9s ease-in infinite; opacity: 0; }
+@keyframes comet { 0%, 82% { transform: translate(0, 0) rotate(18deg); opacity: 0; } 85% { opacity: 1; } 100% { transform: translate(140vw, 46vw) rotate(18deg); opacity: 0; } }
+
+.d-forest .leaves { position: absolute; inset: 0; opacity: .16; background-size: 140px 140px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cg fill='%231f4d14'%3E%3Cpath d='M20 30c10-14 28-14 34 0-10 12-26 12-34 0z' transform='rotate(-30 37 30)'/%3E%3Cpath d='M80 90c10-14 28-14 34 0-10 12-26 12-34 0z' transform='rotate(40 97 90)'/%3E%3Cpath d='M90 20c7-10 20-10 24 0-7 8-18 8-24 0z' transform='rotate(15 102 20)'/%3E%3Cpath d='M16 104c7-10 20-10 24 0-7 8-18 8-24 0z' transform='rotate(-60 28 104)'/%3E%3C/g%3E%3C/svg%3E"); }
+.d-forest .rays { position: absolute; left: -20%; right: -20%; top: -10%; height: 85%; background: repeating-linear-gradient(100deg, rgba(255,255,210,.13) 0 38px, rgba(255,255,210,0) 38px 110px); filter: blur(6px); transform-origin: 50% 0; animation: sway 10s ease-in-out infinite alternate; }
+@keyframes sway { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+
+.d-synth .sun { position: absolute; left: 50%; top: 9%; width: min(68vw, 300px); aspect-ratio: 1; transform: translateX(-50%); border-radius: 50%;
+  background: linear-gradient(180deg, #ffe66d 0%, #ff9f43 42%, #ff2e97 100%); box-shadow: 0 0 70px rgba(255,46,151,.55); opacity: .85;
+  -webkit-mask-image: linear-gradient(180deg, #000 52%, transparent 52% 56%, #000 56% 64%, transparent 64% 69%, #000 69% 76%, transparent 76% 82%, #000 82% 88%, transparent 88% 95%, #000 95%);
+  mask-image: linear-gradient(180deg, #000 52%, transparent 52% 56%, #000 56% 64%, transparent 64% 69%, #000 69% 76%, transparent 76% 82%, #000 82% 88%, transparent 88% 95%, #000 95%); }
+.d-synth .grid { position: absolute; left: -50%; right: -50%; bottom: 0; height: 46%; background-image: linear-gradient(rgba(255,46,151,.85) 2px, rgba(255,46,151,0) 2px), linear-gradient(90deg, rgba(255,46,151,.85) 2px, rgba(255,46,151,0) 2px); background-size: 44px 44px; transform: perspective(260px) rotateX(62deg); transform-origin: 50% 100%; animation: gridMove 1.4s linear infinite;
+  -webkit-mask-image: linear-gradient(to top, #000 30%, transparent 96%); mask-image: linear-gradient(to top, #000 30%, transparent 96%); }
+@keyframes gridMove { from { background-position: 0 0, 0 0; } to { background-position: 0 44px, 0 0; } }
+
+.screen-host { position: relative; z-index: 1; width: 100%; max-width: 560px; height: 100%; margin: 0 auto; }
+.screen { position: absolute; inset: 0; display: flex; flex-direction: column; padding: calc(var(--safe-t) + 12px) calc(var(--safe-r) + 14px) calc(var(--safe-b) + 16px) calc(var(--safe-l) + 14px); animation: screenIn .28s ease-out both; }
+.screen.scroll { overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+@keyframes screenIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+/* =====================================================================
+   4. COMPONENTS
+   ===================================================================== */
+.panel {
+  background: var(--surface); color: var(--surface-ink);
+  border: var(--panel-border); border-image: var(--panel-border-image); background-clip: var(--panel-bg-clip);
+  border-radius: var(--radius); box-shadow: var(--surface-shadow);
+}
+.btn {
+  --b-bg: var(--accent); --b-ink: var(--accent-ink); --b-shadow: var(--btn-shadow); --b-shadow-p: var(--btn-shadow-pressed);
+  appearance: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: .45em;
+  min-height: 56px; padding: 10px 18px; border: var(--btn-border); border-radius: var(--radius-sm);
+  background: var(--b-bg); color: var(--b-ink); box-shadow: var(--b-shadow);
+  font-family: var(--font-display); font-weight: 900; font-size: 1.12rem; text-transform: var(--display-case); letter-spacing: var(--display-track); font-style: var(--display-style);
+  transition: transform .08s ease-out, box-shadow .08s ease-out, filter .15s, opacity .15s; text-decoration: none; line-height: 1.1; text-align: center;
+}
+.btn:active, .btn.is-pressed { transform: var(--btn-press); box-shadow: var(--b-shadow-p); }
+.btn-alt { --b-bg: var(--accent-2); --b-ink: var(--accent-2-ink); --b-shadow: var(--btn-alt-shadow); --b-shadow-p: var(--btn-alt-shadow-pressed); }
+.btn-good { --b-bg: var(--good); --b-ink: var(--good-ink); --b-shadow: var(--btn-good-shadow); --b-shadow-p: var(--btn-good-shadow-pressed); }
+.btn-danger { --b-bg: var(--bad); --b-ink: #ffffff; --b-shadow: var(--btn-danger-shadow); --b-shadow-p: var(--btn-danger-shadow-pressed); }
+.btn-ghost { background: transparent; color: inherit; box-shadow: inset 0 0 0 3px currentColor; border: 0; }
+.btn-ghost:active, .btn-ghost.is-pressed { transform: translateY(2px); box-shadow: inset 0 0 0 3px currentColor; }
+.btn[aria-disabled="true"], .btn:disabled { filter: grayscale(.85); opacity: .62; cursor: not-allowed; }
+.btn-big { width: 100%; min-height: 76px; font-size: 1.4rem; flex-direction: column; gap: 3px; }
+.btn small { font-family: var(--font-ui); font-size: .8rem; font-weight: 800; font-style: normal; opacity: .95; text-transform: none; letter-spacing: 0; }
+.icon-btn { appearance: none; border: 0; cursor: pointer; position: relative; flex: none; display: inline-flex; align-items: center; justify-content: center; min-width: 54px; min-height: 54px; border-radius: var(--radius-sm); background: var(--chip-bg); color: var(--chip-ink); font-size: 1.45rem; box-shadow: var(--surface-shadow); transition: transform .08s, opacity .15s; }
+.icon-btn:active { transform: scale(.94); }
+.icon-btn[aria-pressed="false"] { opacity: .55; }
+.icon-btn.sm { min-width: 48px; min-height: 48px; font-size: 1.2rem; }
+.hold-btn .hold-ring { position: absolute; inset: 1px; width: calc(100% - 2px); height: calc(100% - 2px); transform: rotate(-90deg); pointer-events: none; }
+.hold-btn .hold-ring circle { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 145; stroke-dashoffset: 145; }
+.hold-btn.holding .hold-ring circle { animation: holdFill 2s linear forwards; }
+@keyframes holdFill { to { stroke-dashoffset: 0; } }
+.wallet { appearance: none; border: 0; cursor: pointer; flex: none; display: inline-flex; align-items: center; gap: .35em; min-height: 50px; padding: 6px 16px; border-radius: var(--pill); background: var(--chip-bg); color: var(--chip-ink); box-shadow: var(--surface-shadow); font-family: var(--font-num); font-weight: 900; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.wallet .star-ico { font-size: 1.1em; filter: drop-shadow(0 1px 0 rgba(0,0,0,.2)); }
+.wallet.sm { min-height: 48px; padding: 4px 12px; font-size: 1.1rem; cursor: default; }
+.wallet.bump { animation: bump .5s var(--ease-pop); }
+@keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.2); } 100% { transform: scale(1); } }
+.badge { display: inline-flex; align-items: center; gap: .3em; padding: 5px 12px; border-radius: var(--pill); font-weight: 900; font-size: .95rem; background: var(--accent-2); color: var(--accent-2-ink); line-height: 1.1; }
+.badge.rematch { background: var(--accent-2); color: var(--accent-2-ink); }
+.badge.fail { background: var(--bad); color: #ffffff; }
+.badge.streak { background: var(--accent); color: var(--accent-ink); }
+.badge.good { background: var(--good); color: var(--good-ink); }
+.badge.fact { background: var(--bad-soft); color: var(--bad-text); font-family: var(--font-num); }
+.pips { display: inline-flex; gap: 5px; vertical-align: middle; }
+.pips i { width: 13px; height: 13px; border-radius: 50%; background: var(--surface-2); box-shadow: inset 0 0 0 2px var(--surface-border); }
+.pips i.on { background: var(--good); box-shadow: none; }
+
+/* Overlays, sheets, dialogs */
+.overlay { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; background: rgba(10,10,30,.5); animation: fadeIn .2s ease-out both; }
+.overlay.center { align-items: center; padding: 16px; }
+.overlay.opaque { background: var(--bg-solid); }
+.overlay.closing { animation: fadeOut .18s ease-in forwards; pointer-events: none; }
+.sheet { width: 100%; max-width: 560px; max-height: 92vh; max-height: 92dvh; overflow-y: auto; overscroll-behavior: contain; padding: 14px 18px calc(var(--safe-b) + 18px); border-radius: var(--radius) var(--radius) 0 0; animation: sheetUp .32s var(--ease-pop) both; }
+.overlay.center .sheet { max-width: 420px; border-radius: var(--radius); padding: 20px 18px; animation: popIn .28s var(--ease-pop) both; }
+.sheet h2 { margin: 0; font-size: 1.7rem; line-height: 1.1; }
+.sheet-grip { width: 48px; height: 6px; border-radius: 3px; background: currentColor; opacity: .25; margin: 0 auto 10px; }
+.sheet-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.sheet-badge { display: inline-grid; place-items: center; min-width: 64px; min-height: 64px; padding: 6px 10px; border-radius: var(--radius-sm); background: var(--accent); color: var(--accent-ink); font-weight: 900; font-size: 1.25rem; line-height: 1.05; text-align: center; }
+.sheet-stats { list-style: none; margin: 0 0 4px; padding: 0; display: grid; gap: 6px; }
+.sheet-stats li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--surface-2); font-weight: 800; }
+.sheet-stats li b { font-family: var(--font-num); text-align: right; }
+.sheet-actions { display: grid; gap: 14px; margin-top: 14px; }
+.sheet-close { margin-top: 12px; width: 100%; }
+.dlg { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; }
+.dlg-icon { font-size: 3rem; line-height: 1; }
+.dlg p { margin: 0; font-weight: 700; font-size: 1.05rem; }
+.dlg-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 6px; }
+@keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes popIn { from { transform: scale(.85); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOut { to { opacity: 0; } }
+
+/* Toasts, floaters, announcer */
+.toasts { position: fixed; left: 50%; top: calc(var(--safe-t) + 10px); z-index: 90; transform: translateX(-50%); width: min(92vw, 440px); display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.toast { padding: 12px 16px; border-radius: var(--radius-sm); background: var(--surface); color: var(--surface-ink); box-shadow: var(--surface-shadow); border: 2px solid var(--surface-border); font-weight: 800; text-align: center; animation: toastIn .3s var(--ease-pop) both; }
+.toast.good { background: var(--good-soft); color: var(--good-text); border-color: var(--good); }
+.toast.bad { background: var(--bad-soft); color: var(--bad-text); border-color: var(--bad); }
+.toast.out { animation: toastOut .25s ease-in forwards; }
+.playing .toasts { top: auto; bottom: calc(55% + 6px); }
+@media (max-height: 700px) { .playing .toasts { bottom: calc(50% + 6px); } }
+@media (orientation: landscape) and (max-height: 520px) { .playing .toasts { top: calc(var(--safe-t) + 10px); bottom: auto; } }
+@keyframes toastIn { from { transform: translateY(-16px) scale(.95); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes toastOut { to { transform: translateY(-12px); opacity: 0; } }
+.floater { position: fixed; z-index: 95; pointer-events: none; font-family: var(--font-num); font-weight: 900; font-size: 1.5rem; color: var(--star); text-shadow: 0 2px 0 rgba(0,0,0,.28), 0 0 8px rgba(255,255,255,.6); white-space: nowrap; transform: translate(-50%, -50%); }
+#fx { position: fixed; inset: 0; z-index: 85; width: 100%; height: 100%; pointer-events: none; }
+
+/* =====================================================================
+   5. HUB
+   ===================================================================== */
+.hub-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.brand { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.mascot { width: 54px; height: 54px; flex: none; animation: bob 3s ease-in-out infinite; }
+@keyframes bob { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-5px) rotate(3deg); } }
+.title { margin: 0; font-size: clamp(1.55rem, 7.4vw, 2.3rem); line-height: 1; color: var(--ink); text-shadow: var(--display-glow), var(--ink-shadow); }
+.title span { color: var(--accent-text); display: block; }
+[data-theme="synth"] .title span, [data-theme="cosmic"] .title span { color: var(--accent); }
+[data-theme="forest"] .title span { color: #fde68a; }
+.hub-actions { display: flex; gap: 10px; margin: 16px 0 6px; align-items: center; }
+.hub-actions .btn { flex: 1; min-width: 0; }
+.hub-tag { margin: 10px 2px 12px; font-weight: 900; font-size: 1.15rem; text-shadow: var(--ink-shadow); }
+.level-grid { list-style: none; margin: 0; padding: 4px 0 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 10px; }
+.level-grid li { min-width: 0; }
+.level-card {
+  border: var(--card-border); border-image: var(--card-border-image);
+  appearance: none; cursor: pointer; position: relative; width: 100%; min-height: 152px; padding: 10px 4px 9px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; font-family: var(--font-ui);
+  transition: transform .1s ease-out;
+}
+.level-card:active { transform: scale(.95); }
+.level-card.mastered { box-shadow: 0 0 0 4px #facc15, var(--surface-shadow); }
+.lc-num { font-size: 2.15rem; font-weight: 900; line-height: 1; color: var(--accent-text); text-shadow: var(--display-glow); }
+[data-theme="synth"] .lc-num, [data-theme="cosmic"] .lc-num { color: var(--accent); }
+.lc-pips { margin: 5px 0 1px; }
+.lc-label { font-size: .74rem; font-weight: 800; opacity: .8; }
+.lc-value { font-size: clamp(.7rem, 3.4vw, .95rem); font-weight: 900; line-height: 1.1; }
+.lc-foot { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 2px; padding-top: 4px; }
+.lc-sprint { display: inline-block; padding: 4px 8px; border-radius: var(--pill); background: var(--surface-2); font-size: clamp(.68rem, 3.2vw, .85rem); font-weight: 900; white-space: nowrap; }
+.lc-sprint.ready { background: var(--accent); color: var(--accent-ink); animation: pulse 1.4s ease-in-out infinite; }
+.lc-sprint.best { background: var(--good-soft); color: var(--good-text); }
+.lc-runs { font-size: .72rem; font-weight: 800; opacity: .8; }
+.lc-review { position: absolute; top: -9px; right: -5px; padding: 3px 7px; border-radius: var(--pill); background: var(--accent-2); color: var(--accent-2-ink); font-size: .78rem; font-weight: 900; box-shadow: 0 2px 0 rgba(0,0,0,.2); }
+.lc-crown { position: absolute; top: -17px; left: 50%; transform: translateX(-50%) rotate(-8deg); font-size: 1.5rem; }
+@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+.hub-foot { margin: 18px 4px 4px; text-align: center; font-weight: 800; font-size: .95rem; opacity: .95; text-shadow: var(--ink-shadow); }
+.notice { margin: 12px 0 0; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--bad-soft); color: var(--bad-text); font-weight: 800; font-size: .9rem; text-align: center; }
+
+/* =====================================================================
+   6. PLAY SCREEN (equation pane ≈45% / keypad ≈55%)
+   ===================================================================== */
+.play { padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 45fr) minmax(0, 55fr); }
+.pane-eq { position: relative; min-height: 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding: calc(var(--safe-t) + 8px) calc(var(--safe-r) + 12px) 6px calc(var(--safe-l) + 12px); }
+.play-top { display: flex; align-items: center; gap: 8px; }
+.play-title { flex: 1; min-width: 0; text-align: center; font-weight: 900; font-size: 1.02rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: var(--display-glow), var(--ink-shadow); }
+.play-status { display: flex; align-items: center; justify-content: space-between; gap: 6px 10px; flex-wrap: wrap; font-weight: 900; text-shadow: var(--ink-shadow); }
+.eq-count { font-size: 1rem; white-space: nowrap; }
+.eq-count b { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.dots { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.dots i { width: 14px; height: 14px; border-radius: 50%; background: var(--surface); box-shadow: inset 0 0 0 2px var(--surface-border); transition: background .2s, transform .2s; }
+.dots i.ok { background: var(--good); box-shadow: none; }
+.dots i.bad { background: var(--bad); box-shadow: none; }
+.dots i.now { transform: scale(1.3); box-shadow: inset 0 0 0 3px var(--accent); }
+.dots i.rv { box-shadow: inset 0 0 0 3px var(--accent-2); }
+.score-pill { font-family: var(--font-num); white-space: nowrap; }
+.timer { position: relative; flex: none; width: 64px; height: 64px; display: grid; place-items: center; }
+.timer svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.timer .ring-bg { fill: none; stroke: var(--surface); stroke-width: 7; }
+.timer .ring { fill: none; stroke: var(--good); stroke-width: 7; stroke-linecap: round; stroke-dasharray: 175.93; transition: stroke .3s; }
+.timer.warn .ring { stroke: var(--warn); }
+.timer.danger .ring { stroke: var(--bad); }
+.timer.danger { animation: pulse .9s ease-in-out infinite; }
+.timer.frozen .ring { stroke: var(--ice); }
+.timer-text { position: relative; font-family: var(--font-num); font-weight: 900; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.freeze-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: var(--pill); background: var(--ice); color: #ffffff; font-weight: 900; font-size: .95rem; animation: pulse 1s ease-in-out infinite; text-shadow: none; }
+.progress { flex-basis: 100%; height: 12px; border-radius: var(--pill); background: var(--surface); box-shadow: inset 0 0 0 2px var(--surface-border); overflow: hidden; }
+.progress > i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, var(--accent-2), var(--accent)); transition: width .25s ease-out; }
+.eq-stage { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.eq-card { position: relative; width: 100%; height: 100%; max-height: 270px; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 8px 6px; overflow: hidden; }
+.eq { display: flex; align-items: center; justify-content: center; gap: .2em; max-width: 100%; font-family: var(--font-num); font-weight: 900; font-size: var(--eq-size, 4rem); line-height: 1; color: var(--eq-ink); white-space: nowrap; font-variant-numeric: tabular-nums; text-shadow: var(--display-glow); }
+.eq-op { color: var(--accent-text); }
+[data-theme="synth"] .eq-op, [data-theme="cosmic"] .eq-op { color: var(--accent); }
+.answer { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 2.3em; height: 1.36em; padding: 0 .16em; border-radius: .2em; background: var(--answer-bg); border: .06em solid var(--answer-border); color: var(--eq-ink); transition: background .15s, border-color .15s, color .15s; }
+.answer .caret { display: inline-block; width: .06em; height: .9em; margin-left: .04em; background: currentColor; animation: blink 1s steps(1) infinite; }
+.answer.empty .answer-text::before { content: "?"; opacity: .3; }
+.answer.ok { background: var(--good-soft); border-color: var(--good); color: var(--good-text); animation: popIn .3s var(--ease-pop); }
+.answer.bad { background: var(--bad-soft); border-color: var(--bad); color: var(--bad-text); }
+.answer.ok .caret, .answer.bad .caret, .answer.reveal .caret { display: none; }
+.answer.reveal { background: var(--good-soft); border-color: var(--good); color: var(--good-text); }
+.answer .struck { text-decoration: line-through; text-decoration-thickness: .08em; opacity: .6; font-size: .55em; margin-right: .2em; }
+@keyframes blink { 50% { opacity: 0; } }
+.shake { animation: shake .42s cubic-bezier(.36,.07,.19,.97) both; }
+@keyframes shake { 10%, 90% { transform: translateX(-2px); } 20%, 80% { transform: translateX(4px); } 30%, 50%, 70% { transform: translateX(-8px); } 40%, 60% { transform: translateX(8px); } }
+.eq-sub { min-height: 2em; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; text-align: center; }
+.tray { display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 50px; }
+.chip { appearance: none; border: 0; cursor: pointer; position: relative; min-height: 48px; min-width: 70px; padding: 6px 12px; border-radius: var(--pill); background: var(--chip-bg); color: var(--chip-ink); box-shadow: var(--surface-shadow); display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-weight: 900; font-size: .98rem; transition: transform .08s, opacity .15s, filter .15s; }
+.chip:active { transform: scale(.94); }
+.chip .count { min-width: 1.6em; padding: 1px 6px; border-radius: var(--pill); background: var(--accent); color: var(--accent-ink); font-size: .82rem; font-family: var(--font-num); }
+.chip .ico { font-size: 1.2rem; }
+.chip.off { opacity: .45; filter: grayscale(.85); }
+.chip.active { box-shadow: 0 0 0 3px var(--ice), var(--surface-shadow); }
+.chip.glow { animation: pulse 1s ease-in-out infinite; }
+.chip-note { font-size: .78rem; opacity: .85; }
+
+.prompt { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 12px; text-align: center; animation: popIn .25s var(--ease-pop) both; }
+.prompt h3 { margin: 0; font-size: clamp(1.3rem, 6vw, 1.7rem); }
+.prompt p { margin: 0; font-weight: 800; }
+.prompt-actions { display: flex; gap: 10px; width: 100%; }
+.prompt-actions .btn { flex: 1; min-height: 64px; font-size: 1.05rem; }
+.prompt-timer { width: 100%; height: 8px; border-radius: var(--pill); background: var(--surface-2); overflow: hidden; }
+.prompt-timer i { display: block; height: 100%; background: var(--accent); transform-origin: left center; animation: shrink linear forwards; }
+.play.is-paused .prompt-timer i { animation-play-state: paused; }
+@keyframes shrink { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.play.is-paused .eq-card > *, .play.is-paused .prompt { visibility: hidden; }
+.pane-eq > .prompt { inset: calc(var(--safe-t) + 6px) calc(var(--safe-r) + 10px) 6px calc(var(--safe-l) + 10px); }
+.prompt-eq { font-family: var(--font-num); font-size: clamp(1.4rem, 7vw, 2rem); font-weight: 900; color: var(--eq-ink); }
+.prompt-actions .btn { flex-direction: column; gap: 2px; }
+.timer.bump { animation: bump .5s var(--ease-pop); }
+.sheet-sub { margin: 3px 0 0; font-weight: 700; opacity: .85; }
+.screen:focus, .screen:focus-visible { outline: none; }
+.countdown { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; pointer-events: none; font-family: var(--font-display); font-weight: 900; font-size: clamp(4rem, 26vw, 7.5rem); color: var(--accent-text); text-shadow: 0 6px 0 rgba(0,0,0,.15), var(--display-glow); }
+[data-theme="synth"] .countdown, [data-theme="cosmic"] .countdown { color: var(--accent); }
+.countdown span { animation: countPop .75s var(--ease-pop) both; }
+@keyframes countPop { 0% { transform: scale(2.2); opacity: 0; } 30% { transform: scale(1); opacity: 1; } 80% { opacity: 1; } 100% { transform: scale(.75); opacity: 0; } }
+
+.keypad {
+  position: relative; min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(48px, 1fr));
+  gap: clamp(8px, 2.4vw, 14px); margin: 4px calc(var(--safe-r) + 10px) calc(var(--safe-b) + 12px) calc(var(--safe-l) + 10px); padding: 6px 4px;
+  background: var(--keypad-bg); border: var(--keypad-border); border-image: var(--keypad-border-image); background-clip: var(--keypad-bg-clip); border-radius: var(--radius);
+}
+.key {
+  --k-bg: var(--key-bg); --k-bg-p: var(--key-bg-pressed); --k-ink: var(--key-ink); --k-ink-p: var(--key-ink-pressed);
+  --k-shadow: var(--key-shadow); --k-shadow-p: var(--key-shadow-pressed); --k-ts: var(--key-text-shadow); --k-star: var(--key-star-bg);
+  appearance: none; cursor: pointer; position: relative; z-index: 0; min-width: 48px; min-height: 48px; margin: 0; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: var(--key-border); border-radius: var(--key-radius); background: var(--k-bg); color: var(--k-ink); box-shadow: var(--k-shadow);
+  font-family: var(--font-num); font-weight: 900; font-size: clamp(1.7rem, 8vw, 2.6rem); line-height: 1; text-shadow: var(--k-ts); filter: var(--key-filter);
+  transition: transform .05s ease-out, box-shadow .05s ease-out, filter .1s, background .05s, color .05s;
+}
+.key-ok { --k-bg: var(--key-ok-bg); --k-bg-p: var(--key-ok-bg-pressed); --k-ink: var(--key-ok-ink); --k-ink-p: var(--key-ok-ink-pressed); --k-shadow: var(--key-ok-shadow); --k-shadow-p: var(--key-ok-shadow-pressed); --k-ts: var(--key-ok-text-shadow); --k-star: var(--key-ok-star-bg); }
+.key-del { --k-bg: var(--key-del-bg); --k-bg-p: var(--key-del-bg-pressed); --k-ink: var(--key-del-ink); --k-ink-p: var(--key-del-ink-pressed); --k-shadow: var(--key-del-shadow); --k-shadow-p: var(--key-del-shadow-pressed); --k-ts: var(--key-del-text-shadow); --k-star: var(--key-del-star-bg); }
+.key.is-pressed { transform: var(--key-press); background: var(--k-bg-p); color: var(--k-ink-p); box-shadow: var(--k-shadow-p); filter: var(--key-filter-pressed); }
+.key::before {
+  content: ""; display: var(--key-star); position: absolute; z-index: -1; top: 50%; left: 50%; height: 122%; aspect-ratio: 1 / 1; max-width: 122%;
+  transform: translate(-50%, -53%); background: var(--k-star); transition: transform .08s ease-out;
+  clip-path: polygon(50% 0%, 61.8% 35.4%, 98% 35.4%, 68.6% 57.2%, 79.4% 91.6%, 50% 70.4%, 20.6% 91.6%, 31.4% 57.2%, 2% 35.4%, 38.2% 35.4%);
+}
+.key.is-pressed::before { transform: translate(-50%, -53%) scale(.9) rotate(10deg); }
+.key::after {
+  content: ""; display: var(--key-corners); position: absolute; inset: -5px; pointer-events: none;
+  background: linear-gradient(var(--key-corner-color), var(--key-corner-color)) left top / 14px 3px no-repeat,
+              linear-gradient(var(--key-corner-color), var(--key-corner-color)) left top / 3px 14px no-repeat,
+              linear-gradient(var(--key-corner-color), var(--key-corner-color)) right bottom / 14px 3px no-repeat,
+              linear-gradient(var(--key-corner-color), var(--key-corner-color)) right bottom / 3px 14px no-repeat;
+}
+.key .key-sym { font-size: .85em; }
+.keypad.locked .key { cursor: default; }
+
+/* =====================================================================
+   7. RESULTS
+   ===================================================================== */
+.results { justify-content: center; gap: 14px; }
+.res-card { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 22px 16px; text-align: center; }
+.res-mascot { width: 76px; height: 76px; }
+.res-title { margin: 0; font-size: clamp(1.7rem, 8.5vw, 2.5rem); line-height: 1.05; color: var(--accent-text); text-shadow: var(--display-glow); }
+[data-theme="synth"] .res-title, [data-theme="cosmic"] .res-title { color: var(--accent); }
+.res-sub { margin: 0; font-weight: 800; font-size: 1.05rem; }
+.res-score { font-family: var(--font-num); font-weight: 900; font-size: clamp(3rem, 17vw, 4.8rem); line-height: 1; font-variant-numeric: tabular-nums; }
+.res-score small { font-size: .45em; opacity: .7; }
+.res-points { font-family: var(--font-num); font-weight: 900; font-size: 1.5rem; color: var(--star); }
+.res-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.res-stats span { padding: 6px 10px; border-radius: var(--pill); background: var(--surface-2); font-weight: 800; font-size: .92rem; }
+.res-list-title { margin: 6px 0 0; font-weight: 900; }
+.res-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.res-list li { padding: 6px 10px; border-radius: var(--radius-sm); background: var(--bad-soft); color: var(--bad-text); font-family: var(--font-num); font-weight: 900; }
+.res-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.res-actions .btn:first-child { grid-column: 1 / -1; }
+.res-actions .btn:nth-child(2):last-child { grid-column: 1 / -1; }
+.unlock-banner { padding: 10px 14px; border-radius: var(--radius-sm); background: var(--accent); color: var(--accent-ink); font-weight: 900; font-size: 1.1rem; animation: pulse 1.2s ease-in-out infinite; }
+.stamp { animation: stamp .6s var(--ease-pop) both; }
+@keyframes stamp { from { transform: scale(2.4) rotate(-12deg); opacity: 0; } to { transform: rotate(-3deg); opacity: 1; } }
+
+/* =====================================================================
+   8. SHOP & SETTINGS
+   ===================================================================== */
+.top-row { display: flex; align-items: center; gap: 10px; }
+.top-row h1 { flex: 1; margin: 0; font-size: clamp(1.6rem, 7vw, 2.1rem); text-shadow: var(--display-glow), var(--ink-shadow); }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 16px 0 14px; padding: 6px; border-radius: var(--pill); background: var(--surface); box-shadow: var(--surface-shadow); }
+.tab { appearance: none; border: 0; cursor: pointer; min-height: 48px; border-radius: var(--pill); background: transparent; color: var(--surface-ink); font-weight: 900; font-size: 1.02rem; }
+.tab[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+.shop-list { display: grid; gap: 14px; padding: 4px 0 18px; }
+.item { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; align-items: center; padding: 12px; }
+.item h3 { margin: 0 0 3px; font-size: 1.15rem; line-height: 1.15; }
+.item p { margin: 0 0 6px; font-size: .9rem; font-weight: 700; opacity: .9; }
+.item .rule { font-size: .8rem; font-weight: 800; opacity: .8; margin-bottom: 8px; }
+.item-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.price { font-family: var(--font-num); font-weight: 900; font-size: 1.15rem; white-space: nowrap; }
+.owned { font-weight: 900; font-size: .9rem; opacity: .85; }
+.item .btn { min-height: 48px; padding: 8px 14px; font-size: .98rem; }
+.preview { position: relative; width: 96px; height: 120px; overflow: hidden; border-radius: 14px; background: var(--bg); display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr 1fr; gap: 6px; padding: 8px; box-shadow: inset 0 0 0 2px rgba(0,0,0,.1); }
+.preview .pv-eq { grid-column: 1 / -1; padding: 4px 2px; border-radius: 8px; background: var(--surface); color: var(--eq-ink); font-family: var(--font-num); font-weight: 900; font-size: .85rem; text-align: center; text-shadow: var(--display-glow); border: 1px solid var(--surface-border); }
+.preview .key { min-width: 0; min-height: 0; font-size: 1.05rem; --key-radius: 9px; border-radius: 9px; pointer-events: none; transform: none; }
+.preview .key::after { inset: -3px; }
+.pu-icon { width: 96px; height: 96px; display: grid; place-items: center; font-size: 3rem; border-radius: var(--radius-sm); background: var(--surface-2); }
+.settings-list { display: grid; gap: 14px; padding: 16px 0 20px; }
+.set-card { padding: 16px; display: grid; gap: 10px; }
+.set-card h2 { margin: 0; font-size: 1.25rem; }
+.set-card p { margin: 0; font-weight: 700; font-size: .92rem; opacity: .9; }
+.stepper { display: grid; grid-template-columns: auto 52px minmax(56px, 1fr) 52px; align-items: center; gap: 8px; }
+.stepper label { font-weight: 900; min-width: 72px; }
+.stepper output { text-align: center; font-family: var(--font-num); font-weight: 900; font-size: 1.5rem; }
+.stepper .icon-btn { min-width: 52px; min-height: 52px; }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 900; }
+.switch { appearance: none; border: 0; cursor: pointer; position: relative; width: 72px; height: 44px; border-radius: 999px; background: var(--surface-2); box-shadow: inset 0 0 0 2px var(--surface-border); flex: none; }
+.switch::after { content: ""; position: absolute; top: 5px; left: 5px; width: 34px; height: 34px; border-radius: 50%; background: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,.3); transition: transform .18s ease-out; }
+.switch[aria-checked="true"] { background: var(--good); box-shadow: none; }
+.switch[aria-checked="true"]::after { transform: translateX(28px); }
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat-grid div { padding: 10px; border-radius: var(--radius-sm); background: var(--surface-2); font-weight: 800; font-size: .9rem; }
+.stat-grid b { display: block; font-family: var(--font-num); font-size: 1.3rem; }
+
+/* =====================================================================
+   9. RESPONSIVE & ACCESSIBILITY
+   ===================================================================== */
+@media (min-width: 600px) { .screen-host { border-left: 1px solid rgba(255,255,255,.12); border-right: 1px solid rgba(255,255,255,.12); } }
+@media (max-height: 640px) { .timer { width: 54px; height: 54px; } .play-status { gap: 4px 8px; } .tray { min-height: 48px; } .eq-sub { min-height: 1.7em; } }
+@media (max-width: 430px) {
+  .mode-sprint .tray { flex-wrap: nowrap; gap: 6px; }
+  .mode-sprint .chip { min-width: 0; padding: 6px 10px; gap: 4px; font-size: .92rem; }
+  .mode-sprint .chip-label:not(.keep) { display: none; }
+}
+@media (max-height: 700px) {
+  .play { grid-template-rows: minmax(0, 50fr) minmax(0, 50fr); }
+  .mode-sprint .timer { width: 50px; height: 50px; }
+  .mode-sprint .timer-text { font-size: .95rem; }
+  .mode-sprint .progress { height: 8px; }
+  .pane-eq { gap: 5px; }
+  .keypad { margin-bottom: calc(var(--safe-b) + 8px); padding-top: 4px; padding-bottom: 4px; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .screen-host { max-width: 940px; }
+  .play { grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .keypad { margin-top: calc(var(--safe-t) + 10px); }
+  .level-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  .answer .caret { animation: none; }
+  .d-sunny .cloud { animation: none; transform: translateX(10vw) scale(var(--s, 1)); }
+}
+</style>
+</head>
+<body data-theme="sunny">
+<div class="app" id="app">
+  <div class="decor" aria-hidden="true">
+    <div class="d-sunny"><span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span></div>
+    <div class="d-cosmic"><span class="stars"></span><span class="stars s2"></span><span class="planet"></span><span class="comet"></span></div>
+    <div class="d-forest"><span class="rays"></span><span class="leaves"></span></div>
+    <div class="d-synth"><span class="sun"></span><span class="grid"></span></div>
+  </div>
+  <main class="screen-host" id="screen-host"></main>
+</div>
+<div id="modal-root"></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<div class="sr-only" id="announcer" aria-live="assertive" aria-atomic="true"></div>
+<canvas id="fx" aria-hidden="true"></canvas>
+<noscript><p style="padding:20px;font:700 18px system-ui">Math Sprints needs JavaScript turned on to play.</p></noscript>
+<script>
+(() => {
+'use strict';
+
+/* =====================================================================
+   1. CONFIG & CATALOG — static, frozen definitions (never persisted)
+   ===================================================================== */
+const CONFIG = Object.freeze({
+  STORAGE_KEY: 'mathSprints.v1',
+  SCHEMA_VERSION: 1,
+  LEVELS: Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9]),
+  DEFAULT_RANGE: Object.freeze({ min: 1, max: 25 }),
+  RANGE_LIMIT: Object.freeze({ min: 1, max: 99 }),
+  PRACTICE_LENGTH: 10,
+  PERFECT_RUNS_TO_UNLOCK: 3,
+  REVIEW_SLOTS_PER_SESSION: 6,
+  REVIEW_CLEAR_STREAK: 2,
+  REVIEW_QUEUE_MAX: 60,
+  SPRINT_LENGTH: 40,
+  SPRINT_DURATION_MS: 120000,
+  TIME_WARP_MS: 10000,
+  TIME_WARP_MAX_PER_RUN: 2,
+  FREEZE_MS: 5000,
+  SPRINT_REDO_WINDOW_MS: 2500,
+  PRACTICE_REVEAL_MS: 1600,
+  SPRINT_FACT_FLASH_MS: 1200,
+  FEEDBACK_MS: Object.freeze({ practice: 520, sprint: 230 }),
+  COUNTDOWN_STEP_MS: 750,
+  MAX_SAME_OP_IN_A_ROW: 2,
+  POINTS_PER_CORRECT: 1,
+  SETTINGS_HOLD_MS: 2000,
+  MAX_INVENTORY: 999,
+});
+
+const THEMES = Object.freeze([
+  Object.freeze({ id: 'sunny', name: 'Sunny Pop', cost: 0, icon: '☀️', blurb: 'Sunny skies, fluffy clouds and candy keys.' }),
+  Object.freeze({ id: 'cosmic', name: 'Cosmic Voyage', cost: 40, icon: '🚀', blurb: 'Deep space, neon star keys and arcade fonts.' }),
+  Object.freeze({ id: 'forest', name: 'Enchanted Forest', cost: 60, icon: '🌳', blurb: 'Mossy greens, leafy borders and wooden keys.' }),
+  Object.freeze({ id: 'synth', name: 'Retro Synthwave', cost: 80, icon: '🌆', blurb: 'Hot pink sunsets and a cyber-grid keypad.' }),
+]);
+
+const POWERUPS = Object.freeze([
+  Object.freeze({ id: 'timeWarp', name: 'Time Warp', icon: '⏱️', cost: 25, chip: '+10s', blurb: 'Adds 10 seconds to the Sprint clock.', rule: 'Final Sprint only · max 2 per sprint', modes: Object.freeze(['sprint']) }),
+  Object.freeze({ id: 'secondChance', name: 'Second Chance', icon: '🔄', cost: 15, chip: 'Redo', blurb: 'Wipes away a wrong answer so you can try again.', rule: 'Practice & Sprint · offered right after a mistake', modes: Object.freeze(['practice', 'sprint']) }),
+  Object.freeze({ id: 'freezeRay', name: 'Freeze Ray', icon: '❄️', cost: 35, chip: 'Freeze', blurb: 'Freezes the Sprint clock for 5 seconds while you keep solving.', rule: 'Final Sprint only · one freeze at a time', modes: Object.freeze(['sprint']) }),
+]);
+
+const THEME_BY_ID = new Map(THEMES.map(t => [t.id, t]));
+const POWERUP_BY_ID = new Map(POWERUPS.map(p => [p.id, p]));
+
+const MASCOT_SVG = (cls = 'mascot') => `<svg class="${cls}" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+  <path d="M36 2 L10 36 H26 L20 62 L54 24 H37 L44 2 Z" fill="#facc15" stroke="#1e293b" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="27" cy="27" r="3.2" fill="#1e293b"/><circle cx="37" cy="27" r="3.2" fill="#1e293b"/>
+  <circle cx="28" cy="26" r="1.1" fill="#ffffff"/><circle cx="38" cy="26" r="1.1" fill="#ffffff"/>
+  <path d="M26 34 q6 6 12 0" fill="none" stroke="#1e293b" stroke-width="2.6" stroke-linecap="round"/>
+  <circle cx="22" cy="32" r="2.6" fill="#fb7185" opacity=".75"/><circle cx="42" cy="32" r="2.6" fill="#fb7185" opacity=".75"/>
+</svg>`;
+
+/* =====================================================================
+   2. UTILITIES & RANDOMNESS
+   ===================================================================== */
+const Util = {
+  clamp: (n, lo, hi) => Math.min(hi, Math.max(lo, n)),
+  int(value, fallback, lo = -Infinity, hi = Infinity) {
+    let n = NaN;
+    if (typeof value === 'number') n = value;
+    else if (typeof value === 'string' && value.trim() !== '') n = Number(value);
+    if (!Number.isFinite(n)) return fallback;
+    return Util.clamp(Math.trunc(n), lo, hi);
+  },
+  bool: (value, fallback) => (typeof value === 'boolean' ? value : fallback),
+  esc: s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])),
+  fmtTime(ms) {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  },
+  fmtSecs: ms => `${(Math.max(0, ms) / 1000).toFixed(1)}s`,
+  plural: (n, one, many) => `${n} ${n === 1 ? one : many}`,
+  digits: n => String(Math.abs(Math.trunc(n))).length,
+  reducedMotion: () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches),
+};
+
+const RNG = (() => {
+  const mulberry32 = seed => () => {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  let seeded = null;
+  try {
+    const seedParam = new URLSearchParams(window.location.search).get('seed');
+    if (seedParam && /^\d{1,10}$/.test(seedParam)) seeded = mulberry32(Number(seedParam));
+  } catch (err) { seeded = null; }
+  const buf = new Uint32Array(1);
+  const hasCrypto = !!(window.crypto && window.crypto.getRandomValues);
+  function random() {
+    if (seeded) return seeded();
+    if (hasCrypto) { window.crypto.getRandomValues(buf); return buf[0] / 4294967296; }
+    return Math.random();
+  }
+  return {
+    random,
+    int: (lo, hi) => lo + Math.floor(random() * (hi - lo + 1)),
+    shuffle(list) {
+      const a = list.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    },
+    seed(n) { seeded = mulberry32(n >>> 0); },
+    unseed() { seeded = null; },
+  };
+})();
+
+/* Tiny pub/sub so modules never reach into each other's DOM. */
+const Bus = (() => {
+  const map = new Map();
+  return {
+    on(evt, fn) {
+      if (!map.has(evt)) map.set(evt, new Set());
+      map.get(evt).add(fn);
+      return () => map.get(evt).delete(fn);
+    },
+    emit(evt, data) {
+      const set = map.get(evt);
+      if (!set) return;
+      Array.from(set).forEach(fn => {
+        try { fn(data); } catch (err) { console.error('[MathSprints]', evt, err); }
+      });
+    },
+  };
+})();
+
+/* =====================================================================
+   3. STORE — resilient localStorage abstraction (memory fallback)
+   ===================================================================== */
+const Store = (() => {
+  const KEY = CONFIG.STORAGE_KEY;
+  let ls = null;
+  let memoryCopy = null;
+  let lastWriteOk = true;
+  try {
+    const probe = '__mathSprints_probe__';
+    window.localStorage.setItem(probe, '1');
+    window.localStorage.removeItem(probe);
+    ls = window.localStorage;
+  } catch (err) {
+    ls = null;
+  }
+  return {
+    KEY,
+    get available() { return ls !== null; },
+    get healthy() { return ls !== null && lastWriteOk; },
+    read() {
+      let raw = memoryCopy;
+      if (ls) {
+        try { raw = ls.getItem(KEY); } catch (err) { raw = memoryCopy; }
+      }
+      if (raw === null || raw === undefined) return { status: 'empty', data: null };
+      try {
+        return { status: 'ok', data: JSON.parse(raw) };
+      } catch (err) {
+        if (ls) { try { ls.setItem(`${KEY}.corrupt`, String(raw).slice(0, 200000)); } catch (e) { /* storage full: nothing else to do */ } }
+        return { status: 'corrupt', data: null };
+      }
+    },
+    write(obj) {
+      let raw;
+      try { raw = JSON.stringify(obj); } catch (err) { lastWriteOk = false; return false; }
+      memoryCopy = raw;
+      if (!ls) { lastWriteOk = false; return false; }
+      try { ls.setItem(KEY, raw); lastWriteOk = true; return true; } catch (err) { lastWriteOk = false; return false; }
+    },
+    remove() {
+      memoryCopy = null;
+      if (ls) { try { ls.removeItem(KEY); } catch (err) { /* ignore */ } }
+    },
+  };
+})();
+
+/* =====================================================================
+   4. PROFILE — the only persistent state; every mutation goes through here
+   ===================================================================== */
+const Profile = (() => {
+  let state = null;
+  let warned = false;
+
+  const newLevel = () => ({ perfectPractices: 0, practiceRuns: 0, sprintRuns: 0, sprintBest: 0, sprintPerfects: 0, sprintBestTimeMs: null, reviewQueue: [] });
+
+  function defaults() {
+    const levels = {};
+    CONFIG.LEVELS.forEach(n => { levels[n] = newLevel(); });
+    const now = Date.now();
+    return {
+      version: CONFIG.SCHEMA_VERSION,
+      userPoints: 0,
+      lifetimePoints: 0,
+      themes: { owned: ['sunny'], active: 'sunny' },
+      inventory: Object.fromEntries(POWERUPS.map(p => [p.id, 0])),
+      settings: { sfx: true, music: false, haptics: true, range: { min: CONFIG.DEFAULT_RANGE.min, max: CONFIG.DEFAULT_RANGE.max } },
+      levels,
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
+  function sanitizeRange(r) {
+    const lim = CONFIG.RANGE_LIMIT;
+    let min = Util.int(r && r.min, CONFIG.DEFAULT_RANGE.min, lim.min, lim.max);
+    let max = Util.int(r && r.max, CONFIG.DEFAULT_RANGE.max, lim.min, lim.max);
+    if (min > max) [min, max] = [max, min];
+    return { min, max };
+  }
+
+  function migrate(raw) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+    const version = Util.int(raw.version, 1, 0, 1e6);
+    // Schema upgrades are applied here in order, e.g. if (version < 2) { ... }.
+    if (version > CONFIG.SCHEMA_VERSION) return raw;
+    return raw;
+  }
+
+  function sanitize(raw) {
+    const out = defaults();
+    if (!raw) return out;
+    out.userPoints = Util.int(raw.userPoints, 0, 0, 1e7);
+    out.lifetimePoints = Math.max(out.userPoints, Util.int(raw.lifetimePoints, 0, 0, 1e9));
+    const themes = raw.themes && typeof raw.themes === 'object' ? raw.themes : {};
+    const owned = Array.isArray(themes.owned) ? themes.owned.filter(id => THEME_BY_ID.has(id)) : [];
+    out.themes.owned = Array.from(new Set(['sunny', ...owned]));
+    out.themes.active = out.themes.owned.includes(themes.active) ? themes.active : 'sunny';
+    const inv = raw.inventory && typeof raw.inventory === 'object' ? raw.inventory : {};
+    POWERUPS.forEach(p => { out.inventory[p.id] = Util.int(inv[p.id], 0, 0, CONFIG.MAX_INVENTORY); });
+    const s = raw.settings && typeof raw.settings === 'object' ? raw.settings : {};
+    out.settings.sfx = Util.bool(s.sfx, true);
+    out.settings.music = Util.bool(s.music, false);
+    out.settings.haptics = Util.bool(s.haptics, true);
+    out.settings.range = sanitizeRange(s.range);
+    const levels = raw.levels && typeof raw.levels === 'object' ? raw.levels : {};
+    CONFIG.LEVELS.forEach(n => {
+      const src = levels[n] && typeof levels[n] === 'object' ? levels[n] : {};
+      const L = out.levels[n];
+      L.perfectPractices = Util.int(src.perfectPractices, 0, 0, 1e6);
+      L.practiceRuns = Math.max(L.perfectPractices, Util.int(src.practiceRuns, 0, 0, 1e6));
+      L.sprintRuns = Util.int(src.sprintRuns, 0, 0, 1e6);
+      L.sprintBest = Math.min(Util.int(src.sprintBest, 0, 0, CONFIG.SPRINT_LENGTH), L.sprintRuns > 0 ? CONFIG.SPRINT_LENGTH : 0);
+      L.sprintPerfects = Math.min(Util.int(src.sprintPerfects, 0, 0, 1e6), L.sprintRuns);
+      L.sprintBestTimeMs = src.sprintBestTimeMs === null || src.sprintBestTimeMs === undefined ? null : Util.int(src.sprintBestTimeMs, null, 0, 36e5);
+      const seen = new Set();
+      L.reviewQueue = (Array.isArray(src.reviewQueue) ? src.reviewQueue : [])
+        .map(item => ReviewQueue.sanitizeItem(item, n))
+        .filter(item => item && !seen.has(item.key) && seen.add(item.key))
+        .slice(0, CONFIG.REVIEW_QUEUE_MAX);
+    });
+    out.createdAt = Util.int(raw.createdAt, out.createdAt, 0, 8.64e15);
+    return out;
+  }
+
+  function commit(reason) {
+    state.updatedAt = Date.now();
+    const ok = Store.write(state);
+    if (!ok && !warned) { warned = true; Bus.emit('storage:warning', { available: Store.available }); }
+    Bus.emit('profile:change', { reason });
+  }
+
+  return {
+    load() {
+      const res = Store.read();
+      state = sanitize(migrate(res.data));
+      Store.write(state);
+      return res.status;
+    },
+    reloadFromStorage() {
+      const res = Store.read();
+      if (res.status !== 'ok') return false;
+      state = sanitize(migrate(res.data));
+      Bus.emit('profile:change', { reason: 'external' });
+      return true;
+    },
+    commit,
+    sanitizeRange,
+    get state() { return state; },
+    get points() { return state.userPoints; },
+    get range() { return { min: state.settings.range.min, max: state.settings.range.max }; },
+    level: n => state.levels[n],
+    isSprintUnlocked: n => state.levels[n].perfectPractices >= CONFIG.PERFECT_RUNS_TO_UNLOCK,
+    earn(amount) {
+      const n = Util.int(amount, 0, 0, 1000);
+      if (!n) return;
+      state.userPoints += n;
+      state.lifetimePoints += n;
+      commit('earn');
+    },
+    canAfford: cost => Number.isInteger(cost) && cost >= 0 && state.userPoints >= cost,
+    ownsTheme: id => state.themes.owned.includes(id),
+    buyTheme(id) {
+      const theme = THEME_BY_ID.get(id);
+      if (!theme) return { ok: false, reason: 'unknown' };
+      if (state.themes.owned.includes(id)) return { ok: false, reason: 'owned' };
+      if (!Profile.canAfford(theme.cost)) return { ok: false, reason: 'funds' };
+      state.userPoints -= theme.cost;
+      state.themes.owned.push(id);
+      commit('buy-theme');
+      return { ok: true };
+    },
+    equipTheme(id) {
+      if (!state.themes.owned.includes(id)) return false;
+      state.themes.active = id;
+      commit('theme');
+      return true;
+    },
+    buyPowerup(id) {
+      const p = POWERUP_BY_ID.get(id);
+      if (!p) return { ok: false, reason: 'unknown' };
+      if (state.inventory[id] >= CONFIG.MAX_INVENTORY) return { ok: false, reason: 'full' };
+      if (!Profile.canAfford(p.cost)) return { ok: false, reason: 'funds' };
+      state.userPoints -= p.cost;
+      state.inventory[id] += 1;
+      commit('buy-powerup');
+      return { ok: true };
+    },
+    count: id => state.inventory[id] || 0,
+    consume(id) {
+      if (!(state.inventory[id] > 0)) return false;
+      state.inventory[id] -= 1;
+      commit('consume');
+      return true;
+    },
+    setSetting(key, value) {
+      if (!['sfx', 'music', 'haptics'].includes(key)) return;
+      state.settings[key] = !!value;
+      commit('settings');
+    },
+    setRange(min, max) {
+      state.settings.range = sanitizeRange({ min, max });
+      commit('settings');
+      return Profile.range;
+    },
+    recordPractice(n, perfect) {
+      const L = state.levels[n];
+      const wasUnlocked = L.perfectPractices >= CONFIG.PERFECT_RUNS_TO_UNLOCK;
+      L.practiceRuns += 1;
+      if (perfect) L.perfectPractices += 1;
+      commit('practice');
+      return { perfectPractices: L.perfectPractices, justUnlocked: !wasUnlocked && L.perfectPractices >= CONFIG.PERFECT_RUNS_TO_UNLOCK };
+    },
+    recordSprint(n, { score, timeMs, finishedAll }) {
+      const L = state.levels[n];
+      const prevBest = L.sprintBest;
+      const firstRun = L.sprintRuns === 0;
+      const s = Util.int(score, 0, 0, CONFIG.SPRINT_LENGTH);
+      L.sprintRuns += 1;
+      const newBest = s > prevBest;
+      if (newBest) L.sprintBest = s;
+      const perfect = s === CONFIG.SPRINT_LENGTH;
+      let newBestTime = false;
+      if (perfect) {
+        L.sprintPerfects += 1;
+        if (finishedAll && (L.sprintBestTimeMs === null || timeMs < L.sprintBestTimeMs)) {
+          L.sprintBestTimeMs = Math.round(timeMs);
+          newBestTime = true;
+        }
+      }
+      commit('sprint');
+      return { newBest, firstRun, prevBest, perfect, newBestTime };
+    },
+    reset() {
+      const keepSettings = { sfx: state.settings.sfx, music: state.settings.music, haptics: state.settings.haptics };
+      state = defaults();
+      Object.assign(state.settings, keepSettings);
+      commit('reset');
+    },
+  };
+})();
+
+/* =====================================================================
+   5. EQUATION FACTORY — pure generation & validation (no zeros ever)
+   ===================================================================== */
+const EquationFactory = (() => {
+  const SYMBOL = Object.freeze({ mul: '×', div: '÷' });
+
+  function make(op, a, b) {
+    const answer = op === 'mul' ? a * b : a / b;
+    return { key: `${a}${op === 'mul' ? 'x' : '/'}${b}`, op, a, b, answer };
+  }
+
+  /* Level N must appear as a multiplier, as the divisor, or (spec: "Dividend ÷ S = N") as the quotient. */
+  function validate(eq, level) {
+    if (!eq || (eq.op !== 'mul' && eq.op !== 'div')) return false;
+    const { a, b, answer } = eq;
+    if (![a, b, answer].every(v => Number.isInteger(v) && v >= 1 && v <= 9999)) return false;
+    if (eq.op === 'mul') return a * b === answer && (a === level || b === level);
+    return a % b === 0 && a / b === answer && (b === level || answer === level);
+  }
+
+  function pool(level, range) {
+    const map = new Map();
+    for (let s = range.min; s <= range.max; s++) {
+      const product = level * s;
+      const forms = [make('mul', level, s), make('mul', s, level), make('div', product, level), make('div', product, s)];
+      forms.forEach(eq => { if (validate(eq, level)) map.set(eq.key, eq); });
+    }
+    return Array.from(map.values());
+  }
+
+  /* Builds one run: review items (if any) at random slots, fresh equations elsewhere,
+     50/50 operation mix with no more than MAX_SAME_OP_IN_A_ROW of one kind, no duplicates
+     unless the pool is too small (then repeats, but never back-to-back). */
+  function buildRun(level, count, range, { review = [], exclude = new Set() } = {}) {
+    const all = pool(level, range);
+    const fresh = { mul: [], div: [] };
+    all.forEach(eq => { if (!exclude.has(eq.key)) fresh[eq.op].push(eq); });
+    if (!fresh.mul.length && !fresh.div.length) all.forEach(eq => fresh[eq.op].push(eq));
+    const bags = { mul: RNG.shuffle(fresh.mul), div: RNG.shuffle(fresh.div) };
+    const reviewItems = review.slice(0, count);
+    const reviewAt = new Map();
+    RNG.shuffle(Array.from({ length: count }, (_, i) => i))
+      .slice(0, reviewItems.length)
+      .forEach((pos, i) => reviewAt.set(pos, reviewItems[i]));
+    const used = new Set(reviewItems.map(r => r.key));
+    const run = [];
+    const other = op => (op === 'mul' ? 'div' : 'mul');
+
+    const draw = (op, allowBackToBack) => {
+      if (!fresh[op].length) return null;
+      const prevKey = run.length ? run[run.length - 1].key : null;
+      let idx = bags[op].findIndex(e => !used.has(e.key) && e.key !== prevKey);
+      if (idx === -1) {
+        fresh[op].forEach(e => used.delete(e.key));
+        bags[op] = RNG.shuffle(fresh[op]);
+        idx = bags[op].findIndex(e => e.key !== prevKey);
+        if (idx === -1) {
+          if (!allowBackToBack) return null;
+          idx = 0;
+        }
+      }
+      const eq = bags[op].splice(idx, 1)[0];
+      used.add(eq.key);
+      return eq;
+    };
+
+    for (let i = 0; i < count; i++) {
+      if (reviewAt.has(i)) {
+        const r = reviewAt.get(i);
+        run.push({ ...make(r.op, r.a, r.b), isReview: true });
+        continue;
+      }
+      let op = RNG.random() < 0.5 ? 'mul' : 'div';
+      const tail = run.slice(-CONFIG.MAX_SAME_OP_IN_A_ROW);
+      if (tail.length === CONFIG.MAX_SAME_OP_IN_A_ROW && tail.every(e => e.op === op)) op = other(op);
+      const eq = draw(op, false) || draw(other(op), false) || draw(op, true) || draw(other(op), true);
+      run.push({ ...eq, isReview: false });
+    }
+    return run;
+  }
+
+  return {
+    SYMBOL,
+    make,
+    validate,
+    pool,
+    buildRun,
+    maxDigits: range => Util.digits(9 * range.max),
+    text: eq => `${eq.a} ${SYMBOL[eq.op]} ${eq.b} = ${eq.answer}`,
+  };
+})();
+
+/* =====================================================================
+   6. REVIEW QUEUE — targeted spaced repetition (per level, persistent)
+   ===================================================================== */
+const ReviewQueue = {
+  sanitizeItem(item, level) {
+    if (!item || typeof item !== 'object' || (item.op !== 'mul' && item.op !== 'div')) return null;
+    const a = Util.int(item.a, NaN);
+    const b = Util.int(item.b, NaN);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+    const eq = EquationFactory.make(item.op, a, b);
+    if (!EquationFactory.validate(eq, level)) return null;
+    return {
+      key: eq.key, op: eq.op, a, b, answer: eq.answer,
+      streak: Util.int(item.streak, 0, 0, CONFIG.REVIEW_CLEAR_STREAK - 1),
+      misses: Util.int(item.misses, 1, 1, 1e6),
+      addedAt: Util.int(item.addedAt, Date.now(), 0, 8.64e15),
+      lastSeenAt: Util.int(item.lastSeenAt, 0, 0, 8.64e15),
+    };
+  },
+  queue: level => Profile.level(level).reviewQueue,
+  size(level) { return this.queue(level).length; },
+  keys(level) { return new Set(this.queue(level).map(i => i.key)); },
+  prioritized(level) {
+    return this.queue(level).slice().sort((x, y) => (y.misses - x.misses) || (x.addedAt - y.addedAt));
+  },
+  select(level, max = CONFIG.REVIEW_SLOTS_PER_SESSION) { return this.prioritized(level).slice(0, max); },
+  /* correct + countsForStreak → streak++, cleared at REVIEW_CLEAR_STREAK; wrong → logged / streak reset. */
+  record(level, eq, correct, countsForStreak) {
+    const q = this.queue(level);
+    const idx = q.findIndex(i => i.key === eq.key);
+    const now = Date.now();
+    const result = { logged: false, cleared: false, streak: 0 };
+    if (!correct) {
+      if (idx >= 0) {
+        q[idx].streak = 0;
+        q[idx].misses += 1;
+        q[idx].lastSeenAt = now;
+      } else {
+        q.push({ key: eq.key, op: eq.op, a: eq.a, b: eq.b, answer: eq.answer, streak: 0, misses: 1, addedAt: now, lastSeenAt: now });
+        if (q.length > CONFIG.REVIEW_QUEUE_MAX) {
+          let victim = 0;
+          for (let i = 1; i < q.length - 1; i++) {
+            if (q[i].misses < q[victim].misses || (q[i].misses === q[victim].misses && q[i].addedAt < q[victim].addedAt)) victim = i;
+          }
+          q.splice(victim, 1);
+        }
+      }
+      result.logged = true;
+    } else if (idx >= 0 && countsForStreak) {
+      const item = q[idx];
+      item.streak += 1;
+      item.lastSeenAt = now;
+      result.streak = item.streak;
+      if (item.streak >= CONFIG.REVIEW_CLEAR_STREAK) {
+        q.splice(idx, 1);
+        result.cleared = true;
+      }
+    } else {
+      return result;
+    }
+    Profile.commit('review');
+    return result;
+  },
+};
+
+/* =====================================================================
+   7. TIMING — pausable delays & drift-free sprint clock
+   ===================================================================== */
+class Delay {
+  constructor(ms, fn) {
+    this.left = Math.max(0, ms);
+    this.fn = fn;
+    this.id = 0;
+    this.startedAt = 0;
+    this.done = false;
+    this.resume();
+  }
+  resume() {
+    if (this.done || this.id) return;
+    this.startedAt = performance.now();
+    this.id = setTimeout(() => { this.id = 0; this.done = true; this.fn(); }, this.left);
+  }
+  pause() {
+    if (!this.id) return;
+    clearTimeout(this.id);
+    this.id = 0;
+    this.left = Math.max(0, this.left - (performance.now() - this.startedAt));
+  }
+  cancel() {
+    clearTimeout(this.id);
+    this.id = 0;
+    this.done = true;
+  }
+}
+
+class SprintTimer {
+  constructor(durationMs, { onTick, onExpire } = {}) {
+    this.remaining = durationMs;
+    this.freezeLeft = 0;
+    this.consumed = 0;
+    this.running = false;
+    this.paused = false;
+    this.expired = false;
+    this.onTick = onTick;
+    this.onExpire = onExpire;
+    this.last = 0;
+    this.raf = 0;
+    this.frame = this.frame.bind(this);
+  }
+  start() {
+    if (this.running || this.expired) return;
+    this.running = true;
+    this.last = performance.now();
+    this.raf = requestAnimationFrame(this.frame);
+  }
+  frame(now) {
+    if (!this.running) return;
+    let dt = now - this.last;
+    this.last = now;
+    if (!(dt > 0)) dt = 0;
+    if (dt > 1000) dt = 1000;
+    if (!this.paused) this.advance(dt);
+    if (this.onTick) this.onTick(this);
+    if (this.remaining <= 0) { this.expire(); return; }
+    this.raf = requestAnimationFrame(this.frame);
+  }
+  advance(dt) {
+    if (this.freezeLeft > 0) {
+      const frozen = Math.min(this.freezeLeft, dt);
+      this.freezeLeft -= frozen;
+      dt -= frozen;
+    }
+    if (dt > 0) {
+      const tick = Math.min(this.remaining, dt);
+      this.remaining -= tick;
+      this.consumed += tick;
+    }
+  }
+  pause() { this.paused = true; }
+  resume() {
+    if (!this.paused) return;
+    this.paused = false;
+    this.last = performance.now();
+  }
+  addTime(ms) {
+    if (this.expired) return false;
+    this.remaining += ms;
+    return true;
+  }
+  freeze(ms) {
+    if (this.expired || this.freezeLeft > 0) return false;
+    this.freezeLeft = ms;
+    return true;
+  }
+  get frozen() { return this.freezeLeft > 0; }
+  stop() {
+    this.running = false;
+    cancelAnimationFrame(this.raf);
+  }
+  expire() {
+    if (this.expired) return;
+    this.expired = true;
+    this.remaining = 0;
+    this.stop();
+    if (this.onExpire) this.onExpire();
+  }
+}
+
+/* =====================================================================
+   8. GAME SESSION — one practice or sprint run; pure logic, no DOM.
+      Phases: idle → [countdown] → asking ⇄ feedback | prompt | reveal → finished
+   ===================================================================== */
+class GameSession {
+  constructor({ mode, level }) {
+    this.mode = mode;
+    this.level = level;
+    this.range = Profile.range;
+    this.total = mode === 'practice' ? CONFIG.PRACTICE_LENGTH : CONFIG.SPRINT_LENGTH;
+    this.maxDigits = EquationFactory.maxDigits(this.range);
+    const review = mode === 'practice' ? ReviewQueue.select(level) : [];
+    const exclude = mode === 'practice' ? ReviewQueue.keys(level) : new Set();
+    this.queue = EquationFactory.buildRun(level, this.total, this.range, { review, exclude });
+    this.reviewCount = this.queue.filter(e => e.isReview).length;
+    this.index = 0;
+    this.input = '';
+    this.correct = 0;
+    this.wrong = 0;
+    this.points = 0;
+    this.results = [];
+    this.missed = [];
+    this.failed = false;
+    this.retrying = false;
+    this.streak = 0;
+    this.bestStreak = 0;
+    this.phase = 'idle';
+    this.paused = false;
+    this.pending = null;
+    this.promptDelay = null;
+    this.delays = new Set();
+    this.handlers = {};
+    this.used = { timeWarp: 0, freezeRay: 0, secondChance: 0 };
+    this.reviewCleared = 0;
+    this.summary = null;
+    this.timer = mode === 'sprint'
+      ? new SprintTimer(CONFIG.SPRINT_DURATION_MS, { onTick: t => this.emit('tick', t), onExpire: () => this.finish('timeout') })
+      : null;
+  }
+
+  on(evt, fn) {
+    if (!this.handlers[evt]) this.handlers[evt] = [];
+    this.handlers[evt].push(fn);
+    return this;
+  }
+  emit(evt, data) {
+    (this.handlers[evt] || []).forEach(fn => {
+      try { fn(data, this); } catch (err) { console.error('[MathSprints] session', evt, err); }
+    });
+  }
+  get current() { return this.queue[this.index] || null; }
+  get isSprint() { return this.mode === 'sprint'; }
+  get finished() { return this.phase === 'finished'; }
+
+  after(ms, fn) {
+    const d = new Delay(ms, () => {
+      this.delays.delete(d);
+      if (this.phase !== 'finished') fn();
+    });
+    this.delays.add(d);
+    if (this.paused) d.pause();
+    return d;
+  }
+  cancelDelay(d) {
+    if (!d) return;
+    d.cancel();
+    this.delays.delete(d);
+  }
+  setPhase(p) {
+    this.phase = p;
+    this.emit('phase', p);
+  }
+
+  start() {
+    if (this.phase !== 'idle') return;
+    if (this.isSprint) {
+      this.setPhase('countdown');
+      const steps = ['3', '2', '1', 'GO!'];
+      const step = i => {
+        this.emit('countdown', { label: steps[i], final: i === steps.length - 1 });
+        if (i < steps.length - 1) this.after(CONFIG.COUNTDOWN_STEP_MS, () => step(i + 1));
+        else this.after(Math.round(CONFIG.COUNTDOWN_STEP_MS * 0.6), () => { this.timer.start(); this.ask(); });
+      };
+      step(0);
+    } else {
+      this.ask();
+    }
+  }
+
+  ask() {
+    this.input = '';
+    this.retrying = false;
+    this.setPhase('asking');
+    this.emit('question', { eq: this.current, index: this.index });
+  }
+
+  press(key) {
+    if (this.phase !== 'asking' || this.paused) return { ok: false, reason: 'locked' };
+    if (key === 'ok') return this.submit();
+    if (key === 'del') {
+      if (!this.input) return { ok: false, reason: 'empty' };
+      this.input = this.input.slice(0, -1);
+      this.emit('input', this.input);
+      return { ok: true };
+    }
+    if (key === 'clear') {
+      if (!this.input) return { ok: false, reason: 'empty' };
+      this.input = '';
+      this.emit('input', this.input);
+      return { ok: true };
+    }
+    if (!/^[0-9]$/.test(key)) return { ok: false, reason: 'invalid' };
+    if (this.input === '' && key === '0') return { ok: false, reason: 'leading-zero' };
+    if (this.input.length >= this.maxDigits) return { ok: false, reason: 'max' };
+    this.input += key;
+    this.emit('input', this.input);
+    return { ok: true };
+  }
+
+  submit() {
+    if (this.phase !== 'asking' || this.paused) return { ok: false, reason: 'locked' };
+    if (!this.input) return { ok: false, reason: 'empty' };
+    const eq = this.current;
+    const given = parseInt(this.input, 10);
+    if (given === eq.answer) this.onCorrect(eq, given);
+    else this.onWrong(eq, given);
+    return { ok: true, correct: given === eq.answer };
+  }
+
+  onCorrect(eq, given) {
+    this.correct += 1;
+    this.streak += 1;
+    this.bestStreak = Math.max(this.bestStreak, this.streak);
+    this.points += CONFIG.POINTS_PER_CORRECT;
+    this.results[this.index] = 'ok';
+    Profile.earn(CONFIG.POINTS_PER_CORRECT);
+    let review = null;
+    if (!this.isSprint) {
+      review = ReviewQueue.record(this.level, eq, true, eq.isReview && !this.retrying);
+      if (review.cleared) this.reviewCleared += 1;
+    }
+    this.setPhase('feedback');
+    this.emit('correct', { eq, given, streak: this.streak, review, retried: this.retrying });
+    this.after(CONFIG.FEEDBACK_MS[this.mode], () => this.advance());
+  }
+
+  onWrong(eq, given) {
+    this.streak = 0;
+    if (!this.isSprint) ReviewQueue.record(this.level, eq, false, false);
+    const canRedo = Profile.count('secondChance') > 0 && (this.isSprint || !this.failed);
+    if (canRedo) {
+      this.pending = { eq, given };
+      this.setPhase('prompt');
+      this.emit('wrong', { eq, given, prompt: true });
+      this.emit('prompt', { eq, given, charges: Profile.count('secondChance'), timed: this.isSprint, windowMs: CONFIG.SPRINT_REDO_WINDOW_MS });
+      if (this.isSprint) this.promptDelay = this.after(CONFIG.SPRINT_REDO_WINDOW_MS, () => this.declineSecondChance());
+    } else {
+      this.emit('wrong', { eq, given, prompt: false });
+      this.commitMistake(eq, given);
+    }
+  }
+
+  useSecondChance() {
+    if (this.phase !== 'prompt' || this.paused || !this.pending) return false;
+    if (!Profile.consume('secondChance')) { this.declineSecondChance(); return false; }
+    this.cancelDelay(this.promptDelay);
+    this.promptDelay = null;
+    this.used.secondChance += 1;
+    this.pending = null;
+    this.retrying = true;
+    this.input = '';
+    this.setPhase('asking');
+    this.emit('retry', { eq: this.current, charges: Profile.count('secondChance') });
+    return true;
+  }
+
+  declineSecondChance() {
+    if (this.phase !== 'prompt' || !this.pending) return false;
+    this.cancelDelay(this.promptDelay);
+    this.promptDelay = null;
+    const { eq, given } = this.pending;
+    this.pending = null;
+    this.commitMistake(eq, given);
+    return true;
+  }
+
+  commitMistake(eq, given) {
+    this.wrong += 1;
+    this.results[this.index] = 'bad';
+    if (!this.missed.some(m => m.eq.key === eq.key)) this.missed.push({ eq, given });
+    let justFailed = false;
+    if (!this.isSprint && !this.failed) { this.failed = true; justFailed = true; }
+    this.setPhase('reveal');
+    this.emit('reveal', { eq, given, justFailed });
+    if (this.isSprint) this.advance();
+    else this.after(CONFIG.PRACTICE_REVEAL_MS, () => this.advance());
+  }
+
+  advance() {
+    if (this.phase === 'finished') return;
+    this.index += 1;
+    if (this.index >= this.total) { this.finish('complete'); return; }
+    this.ask();
+  }
+
+  canUse(id) {
+    const p = POWERUP_BY_ID.get(id);
+    if (!p) return { ok: false, reason: 'unknown' };
+    if (!p.modes.includes(this.mode)) return { ok: false, reason: 'mode' };
+    if (this.phase === 'finished') return { ok: false, reason: 'not-now' };
+    if (Profile.count(id) <= 0) return { ok: false, reason: 'none' };
+    if (id === 'secondChance') return this.phase === 'prompt' && !this.paused ? { ok: true } : { ok: false, reason: 'auto' };
+    if (this.paused || !['asking', 'feedback', 'prompt', 'reveal'].includes(this.phase)) return { ok: false, reason: 'not-now' };
+    if (id === 'timeWarp' && this.used.timeWarp >= CONFIG.TIME_WARP_MAX_PER_RUN) return { ok: false, reason: 'limit' };
+    if (id === 'freezeRay' && this.timer && this.timer.frozen) return { ok: false, reason: 'active' };
+    return { ok: true };
+  }
+
+  usePowerup(id) {
+    const check = this.canUse(id);
+    if (!check.ok) return check;
+    if (id === 'secondChance') return { ok: this.useSecondChance() };
+    if (!Profile.consume(id)) return { ok: false, reason: 'none' };
+    this.used[id] += 1;
+    if (id === 'timeWarp') {
+      this.timer.addTime(CONFIG.TIME_WARP_MS);
+      this.emit('warp', { used: this.used.timeWarp });
+    } else if (id === 'freezeRay') {
+      this.timer.freeze(CONFIG.FREEZE_MS);
+      this.emit('freeze', { ms: CONFIG.FREEZE_MS });
+    }
+    return { ok: true };
+  }
+
+  pause(reason = 'user') {
+    if (this.paused || this.phase === 'finished' || this.phase === 'idle') return false;
+    this.paused = true;
+    this.delays.forEach(d => d.pause());
+    if (this.timer && this.timer.running) this.timer.pause();
+    this.emit('pause', { reason });
+    return true;
+  }
+
+  resume() {
+    if (!this.paused || this.phase === 'finished') return false;
+    this.paused = false;
+    this.delays.forEach(d => d.resume());
+    if (this.timer && this.timer.running) this.timer.resume();
+    this.emit('resume', {});
+    return true;
+  }
+
+  finish(reason) {
+    if (this.phase === 'finished') return;
+    if (this.phase === 'prompt' && this.pending) {
+      // Time ran out inside the redo window: the miss stands.
+      this.wrong += 1;
+      this.results[this.index] = 'bad';
+      if (!this.missed.some(m => m.eq.key === this.pending.eq.key)) this.missed.push(this.pending);
+      this.pending = null;
+    }
+    this.phase = 'finished';
+    this.paused = false;
+    this.delays.forEach(d => d.cancel());
+    this.delays.clear();
+    if (this.timer) this.timer.stop();
+    const summary = {
+      mode: this.mode, level: this.level, reason,
+      correct: this.correct, wrong: this.wrong, total: this.total,
+      answered: Math.min(this.total, this.correct + this.wrong),
+      points: this.points, missed: this.missed.slice(), bestStreak: this.bestStreak,
+      used: { ...this.used }, reviewCount: this.reviewCount, reviewCleared: this.reviewCleared,
+    };
+    if (this.isSprint) {
+      const finishedAll = reason === 'complete';
+      const record = Profile.recordSprint(this.level, { score: this.correct, timeMs: this.timer.consumed, finishedAll });
+      Object.assign(summary, { finishedAll, timeUsedMs: this.timer.consumed, timeLeftMs: this.timer.remaining, record });
+    } else {
+      const perfect = reason === 'complete' && !this.failed && this.correct === this.total;
+      const record = Profile.recordPractice(this.level, perfect);
+      Object.assign(summary, { perfect, failed: this.failed, record, reviewLeft: ReviewQueue.size(this.level) });
+    }
+    this.summary = summary;
+    this.emit('phase', 'finished');
+    this.emit('finish', summary);
+  }
+
+  /* Leave mid-run: earned stars stay, the run is not recorded. */
+  abandon() {
+    if (this.phase === 'finished') return;
+    this.phase = 'finished';
+    this.delays.forEach(d => d.cancel());
+    this.delays.clear();
+    if (this.timer) this.timer.stop();
+    this.handlers = {};
+  }
+}
+
+/* =====================================================================
+   9. AUDIO ENGINE — everything synthesized with the Web Audio API
+   ===================================================================== */
+const AudioEngine = (() => {
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  let ctx = null;
+  let master = null;
+  let sfxBus = null;
+  let musicBus = null;
+  let noiseBuffer = null;
+  let sfxOn = true;
+  let musicOn = false;
+  let music = null;
+
+  function ensure() {
+    if (!Ctx) return null;
+    if (!ctx) {
+      try {
+        ctx = new Ctx();
+        master = ctx.createGain();
+        master.gain.value = 0.9;
+        const comp = ctx.createDynamicsCompressor();
+        comp.threshold.value = -14; comp.knee.value = 12; comp.ratio.value = 4;
+        master.connect(comp);
+        comp.connect(ctx.destination);
+        sfxBus = ctx.createGain(); sfxBus.gain.value = 0.85; sfxBus.connect(master);
+        musicBus = ctx.createGain(); musicBus.gain.value = 0; musicBus.connect(master);
+        noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.5), ctx.sampleRate);
+        const data = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      } catch (err) {
+        ctx = null;
+        return null;
+      }
+    }
+    if (ctx.state === 'suspended' && !document.hidden) {
+      try { const p = ctx.resume(); if (p && p.catch) p.catch(() => {}); } catch (err) { /* ignore */ }
+    }
+    return ctx;
+  }
+
+  function envelope(param, t0, peak, attack, dur) {
+    param.setValueAtTime(0.0001, t0);
+    param.exponentialRampToValueAtTime(Math.max(0.0002, peak), t0 + attack);
+    param.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  }
+
+  function voice({ type = 'sine', freq = 440, to = null, at = 0, dur = 0.2, peak = 0.2, attack = 0.008, filter = null }) {
+    const c = ensure();
+    if (!c || !sfxOn) return;
+    const t0 = c.currentTime + at;
+    const osc = c.createOscillator();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t0);
+    if (to) osc.frequency.exponentialRampToValueAtTime(to, t0 + dur);
+    const gain = c.createGain();
+    envelope(gain.gain, t0, peak, attack, dur);
+    let node = osc;
+    if (filter) {
+      const f = c.createBiquadFilter();
+      f.type = filter.type || 'lowpass';
+      f.frequency.value = filter.freq;
+      f.Q.value = filter.q || 0.7;
+      osc.connect(f);
+      node = f;
+    }
+    node.connect(gain);
+    gain.connect(sfxBus);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.05);
+  }
+
+  function noise({ at = 0, dur = 0.03, peak = 0.1, type = 'bandpass', freq = 2400, to = null, q = 1.2 }) {
+    const c = ensure();
+    if (!c || !sfxOn) return;
+    const t0 = c.currentTime + at;
+    const src = c.createBufferSource();
+    src.buffer = noiseBuffer;
+    const f = c.createBiquadFilter();
+    f.type = type;
+    f.frequency.setValueAtTime(freq, t0);
+    f.Q.value = q;
+    if (to) f.frequency.exponentialRampToValueAtTime(to, t0 + dur);
+    const gain = c.createGain();
+    envelope(gain.gain, t0, peak, 0.004, dur);
+    src.connect(f);
+    f.connect(gain);
+    gain.connect(sfxBus);
+    src.start(t0);
+    src.stop(t0 + dur + 0.02);
+  }
+
+  const sounds = {
+    /* Cheerful ascending dual-tone chime: 440 Hz → 880 Hz sine. */
+    correct() {
+      const c = ensure();
+      if (!c) return;
+      const t0 = c.currentTime;
+      const osc = c.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, t0);
+      osc.frequency.setValueAtTime(880, t0 + 0.09);
+      const gain = c.createGain();
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.26, t0 + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.1, t0 + 0.085);
+      gain.gain.exponentialRampToValueAtTime(0.28, t0 + 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.48);
+      osc.connect(gain);
+      gain.connect(sfxBus);
+      osc.start(t0);
+      osc.stop(t0 + 0.52);
+      voice({ freq: 1760, at: 0.09, dur: 0.32, peak: 0.045 });
+    },
+    /* Brief descending buzz: 180 Hz → 100 Hz sawtooth, softened by a low-pass filter. */
+    wrong() { voice({ type: 'sawtooth', freq: 180, to: 100, dur: 0.32, peak: 0.12, attack: 0.01, filter: { type: 'lowpass', freq: 900 } }); },
+    /* Ultra-short neutral click. */
+    tap() { noise({ dur: 0.025, peak: 0.09, freq: 2600 }); },
+    tick() { voice({ type: 'triangle', freq: 1150, dur: 0.06, peak: 0.08, attack: 0.003 }); },
+    coin() {
+      voice({ type: 'square', freq: 988, dur: 0.09, peak: 0.05, filter: { freq: 3200 } });
+      voice({ type: 'square', freq: 1319, at: 0.08, dur: 0.32, peak: 0.05, filter: { freq: 3200 } });
+    },
+    fanfare() {
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => voice({ type: 'triangle', freq: f, at: i * 0.1, dur: i === 3 ? 0.6 : 0.18, peak: 0.16 }));
+      voice({ freq: 2093, at: 0.3, dur: 0.5, peak: 0.04 });
+    },
+    unlock() {
+      [392, 523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => voice({ type: 'triangle', freq: f, at: i * 0.08, dur: i === 5 ? 0.8 : 0.16, peak: 0.15 }));
+    },
+    warp() {
+      voice({ type: 'sine', freq: 300, to: 1400, dur: 0.45, peak: 0.16 });
+      noise({ dur: 0.4, peak: 0.05, freq: 500, to: 4000 });
+    },
+    freeze() { [2093, 1760, 1568, 1319, 1047].forEach((f, i) => voice({ freq: f, at: i * 0.06, dur: 0.3, peak: 0.06 })); },
+    whoosh() { noise({ dur: 0.35, peak: 0.08, freq: 400, to: 3000, q: 0.8 }); },
+    count(final) { voice({ type: 'triangle', freq: final ? 880 : 523.25, dur: final ? 0.4 : 0.14, peak: 0.16 }); },
+    nope() { voice({ type: 'triangle', freq: 220, dur: 0.08, peak: 0.07 }); },
+  };
+
+  /* Ambient Focus Track: low-pass-filtered triangle pad gliding through
+     Cmaj7 → Am7 → Fmaj7 → G6 with a slow filter sweep, a soft pulse and rare twinkles. */
+  const CHORDS = [
+    [130.81, 164.81, 196.0, 246.94],
+    [110.0, 130.81, 164.81, 196.0],
+    [87.31, 110.0, 130.81, 164.81],
+    [98.0, 123.47, 146.83, 164.81],
+  ];
+  const TWINKLES = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5];
+
+  function twinkle(at) {
+    if (!ctx || !music) return;
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = TWINKLES[Math.floor(Math.random() * TWINKLES.length)];
+    const gain = ctx.createGain();
+    envelope(gain.gain, at, 0.05, 0.03, 1.8);
+    osc.connect(gain);
+    gain.connect(musicBus);
+    osc.start(at);
+    osc.stop(at + 1.9);
+  }
+
+  function startMusic() {
+    const c = ensure();
+    if (!c || music) return;
+    const t = c.currentTime;
+    const filter = c.createBiquadFilter();
+    filter.type = 'lowpass'; filter.frequency.value = 720; filter.Q.value = 0.8;
+    const sweep = c.createOscillator(); sweep.frequency.value = 0.07;
+    const sweepDepth = c.createGain(); sweepDepth.gain.value = 260;
+    sweep.connect(sweepDepth); sweepDepth.connect(filter.frequency);
+    const pulse = c.createGain(); pulse.gain.value = 0.72;
+    const pulseLfo = c.createOscillator(); pulseLfo.frequency.value = 0.2;
+    const pulseDepth = c.createGain(); pulseDepth.gain.value = 0.22;
+    pulseLfo.connect(pulseDepth); pulseDepth.connect(pulse.gain);
+    filter.connect(pulse); pulse.connect(musicBus);
+    const voices = CHORDS[0].map((f, i) => {
+      const osc = c.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.value = f;
+      osc.detune.value = (i - 1.5) * 5;
+      const g = c.createGain(); g.gain.value = 0.16;
+      osc.connect(g); g.connect(filter);
+      osc.start(t);
+      return osc;
+    });
+    const sub = c.createOscillator(); sub.type = 'sine'; sub.frequency.value = CHORDS[0][0] / 2;
+    const subGain = c.createGain(); subGain.gain.value = 0.2;
+    sub.connect(subGain); subGain.connect(filter);
+    sub.start(t); sweep.start(t); pulseLfo.start(t);
+    musicBus.gain.cancelScheduledValues(t);
+    musicBus.gain.setValueAtTime(musicBus.gain.value, t);
+    musicBus.gain.linearRampToValueAtTime(0.14, t + 1.5);
+    let chord = 0;
+    const interval = setInterval(() => {
+      if (!music || !ctx) return;
+      chord = (chord + 1) % CHORDS.length;
+      const now = ctx.currentTime;
+      CHORDS[chord].forEach((f, i) => voices[i].frequency.setTargetAtTime(f, now, 1.1));
+      sub.frequency.setTargetAtTime(CHORDS[chord][0] / 2, now, 1.1);
+      if (Math.random() < 0.65) twinkle(now + 0.8 + Math.random() * 5);
+    }, 8000);
+    music = { voices, sub, sweep, pulseLfo, filter, pulse, interval };
+  }
+
+  function stopMusic() {
+    if (!music) return;
+    const m = music;
+    music = null;
+    clearInterval(m.interval);
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    musicBus.gain.cancelScheduledValues(t);
+    musicBus.gain.setValueAtTime(musicBus.gain.value, t);
+    musicBus.gain.linearRampToValueAtTime(0, t + 1.2);
+    setTimeout(() => {
+      [...m.voices, m.sub, m.sweep, m.pulseLfo].forEach(o => { try { o.stop(); } catch (err) { /* already stopped */ } });
+      try { m.filter.disconnect(); m.pulse.disconnect(); } catch (err) { /* ignore */ }
+    }, 1400);
+  }
+
+  return {
+    get supported() { return !!Ctx; },
+    get musicPlaying() { return !!music; },
+    unlock() {
+      const c = ensure();
+      if (c && musicOn && !music) startMusic();
+    },
+    setSfx(on) { sfxOn = !!on; },
+    setMusic(on) {
+      musicOn = !!on;
+      if (musicOn) { if (ctx) startMusic(); } else stopMusic();
+    },
+    play(name, arg) {
+      if (!sfxOn) return;
+      try { if (sounds[name]) sounds[name](arg); } catch (err) { /* sound must never break the game */ }
+    },
+    onVisibility(hidden) {
+      if (!ctx) return;
+      try {
+        const p = hidden ? ctx.suspend() : ctx.resume();
+        if (p && p.catch) p.catch(() => {});
+      } catch (err) { /* ignore */ }
+    },
+  };
+})();
+
+/* =====================================================================
+   10. FX — confetti canvas, floating "+1 ⭐", shakes, haptics
+   ===================================================================== */
+const FX = (() => {
+  const canvas = document.getElementById('fx');
+  const g = canvas.getContext('2d');
+  let parts = [];
+  let raf = 0;
+  let dpr = 1;
+
+  function resize() {
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.round(window.innerWidth * dpr);
+    canvas.height = Math.round(window.innerHeight * dpr);
+  }
+  function palette() {
+    const v = getComputedStyle(document.body).getPropertyValue('--confetti').trim();
+    return v ? v.split(',').map(s => s.trim()) : ['#f43f5e', '#f59e0b', '#22c55e', '#3b82f6', '#a855f7'];
+  }
+  function star(r) {
+    g.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const rad = i % 2 ? r * 0.45 : r;
+      const a = (Math.PI / 5) * i - Math.PI / 2;
+      g.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
+    }
+    g.closePath();
+    g.fill();
+  }
+  function loop() {
+    const now = performance.now();
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    parts = parts.filter(p => now - p.born < p.life && p.y < window.innerHeight + 60);
+    for (const p of parts) {
+      const t = Math.min(4, (now - p.last) / 16.67);
+      p.last = now;
+      p.vy += p.gravity * t;
+      p.vx *= Math.pow(p.drag, t);
+      p.vy *= Math.pow(p.drag, t);
+      p.x += p.vx * t;
+      p.y += p.vy * t;
+      p.rot += p.spin * t;
+      const age = (now - p.born) / p.life;
+      g.save();
+      g.globalAlpha = age > 0.75 ? Math.max(0, (1 - age) / 0.25) : 1;
+      g.translate(p.x, p.y);
+      g.rotate(p.rot);
+      g.fillStyle = p.color;
+      if (p.shape === 'star') star(p.size * 0.6);
+      else g.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+      g.restore();
+    }
+    if (parts.length) raf = requestAnimationFrame(loop);
+    else { raf = 0; g.clearRect(0, 0, window.innerWidth, window.innerHeight); }
+  }
+  function spawn(list) {
+    if (Util.reducedMotion() || document.hidden) return;
+    parts.push(...list);
+    if (parts.length > 420) parts.splice(0, parts.length - 420);
+    if (!raf) { resize(); raf = requestAnimationFrame(loop); }
+  }
+
+  return {
+    resize,
+    confetti(count = 130) {
+      const colors = palette();
+      const now = performance.now();
+      const list = [];
+      for (let i = 0; i < count; i++) {
+        const left = i % 2 === 0;
+        list.push({
+          x: left ? -10 : window.innerWidth + 10,
+          y: window.innerHeight * (0.55 + Math.random() * 0.3),
+          vx: (left ? 1 : -1) * (5 + Math.random() * 9),
+          vy: -(10 + Math.random() * 12),
+          gravity: 0.36, drag: 0.985, rot: Math.random() * 6, spin: (Math.random() - 0.5) * 0.4,
+          size: 8 + Math.random() * 8, color: colors[i % colors.length], shape: Math.random() < 0.25 ? 'star' : 'rect',
+          born: now, last: now, life: 2600 + Math.random() * 1200,
+        });
+      }
+      spawn(list);
+    },
+    burst(x, y, count = 14) {
+      const colors = palette();
+      const now = performance.now();
+      const list = [];
+      for (let i = 0; i < count; i++) {
+        const a = (Math.PI * 2 * i) / count + Math.random() * 0.3;
+        const speed = 3 + Math.random() * 4;
+        list.push({
+          x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed - 1.5, gravity: 0.12, drag: 0.94,
+          rot: 0, spin: (Math.random() - 0.5) * 0.3, size: 9 + Math.random() * 6, color: colors[i % colors.length],
+          shape: 'star', born: now, last: now, life: 650 + Math.random() * 300,
+        });
+      }
+      spawn(list);
+    },
+    burstFrom(el, count) {
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      FX.burst(r.left + r.width / 2, r.top + r.height / 2, count);
+    },
+    floatText(text, fromEl, toEl) {
+      if (!fromEl || document.hidden) return;
+      const a = fromEl.getBoundingClientRect();
+      const el = document.createElement('div');
+      el.className = 'floater';
+      el.textContent = text;
+      el.setAttribute('aria-hidden', 'true');
+      const x0 = a.left + a.width / 2;
+      const y0 = a.top;
+      el.style.left = `${x0}px`;
+      el.style.top = `${y0}px`;
+      document.body.appendChild(el);
+      let dx = 0;
+      let dy = -70;
+      if (toEl) {
+        const b = toEl.getBoundingClientRect();
+        if (b.width) { dx = b.left + b.width / 2 - x0; dy = b.top + b.height / 2 - y0; }
+      }
+      if (Util.reducedMotion() || !el.animate) { setTimeout(() => el.remove(), 500); return; }
+      const anim = el.animate([
+        { transform: 'translate(-50%, -50%) scale(.6)', opacity: 0 },
+        { transform: 'translate(-50%, -120%) scale(1.25)', opacity: 1, offset: 0.3 },
+        { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(.7)`, opacity: 0.85 },
+      ], { duration: 820, easing: 'cubic-bezier(.5,0,.3,1)' });
+      anim.onfinish = () => el.remove();
+      anim.oncancel = () => el.remove();
+    },
+    shake(el) {
+      if (!el) return;
+      el.classList.remove('shake');
+      void el.offsetWidth;
+      el.classList.add('shake');
+    },
+    vibrate(pattern) {
+      if (!Profile.state.settings.haptics || !navigator.vibrate) return;
+      try { navigator.vibrate(pattern); } catch (err) { /* unsupported */ }
+    },
+  };
+})();
+
+/* =====================================================================
+   11. UI KIT — sheets/dialogs, toasts, announcer, Back-button guard
+   ===================================================================== */
+const UI = (() => {
+  const modalRoot = document.getElementById('modal-root');
+  const toastRoot = document.getElementById('toasts');
+  const announcer = document.getElementById('announcer');
+  const stack = [];
+
+  function close(entry, result) {
+    if (entry.closed) return;
+    entry.closed = true;
+    const i = stack.indexOf(entry);
+    if (i >= 0) stack.splice(i, 1);
+    entry.overlay.classList.add('closing');
+    setTimeout(() => entry.overlay.remove(), Util.reducedMotion() ? 0 : 180);
+    if (entry.onClose) entry.onClose(result);
+    const back = entry.prevFocus;
+    if (back && typeof back.focus === 'function' && document.contains(back)) {
+      try { back.focus({ preventScroll: true }); } catch (err) { /* ignore */ }
+    }
+  }
+
+  function open({ html, className = '', center = false, opaque = false, dismissible = true, label = 'Dialog', onClose = null, onMount = null }) {
+    const overlay = document.createElement('div');
+    overlay.className = `overlay${center ? ' center' : ''}${opaque ? ' opaque' : ''}`;
+    overlay.innerHTML = `<section class="sheet panel ${className}" role="dialog" aria-modal="true" aria-label="${Util.esc(label)}" tabindex="-1">${html}</section>`;
+    const sheet = overlay.firstElementChild;
+    const entry = { overlay, sheet, dismissible, onClose, prevFocus: document.activeElement, closed: false };
+    entry.close = result => close(entry, result);
+    overlay.addEventListener('click', e => { if (e.target === overlay && entry.dismissible) entry.close(); });
+    modalRoot.appendChild(overlay);
+    stack.push(entry);
+    Nav.arm();
+    if (onMount) onMount(sheet, entry);
+    requestAnimationFrame(() => {
+      if (entry.closed) return;
+      const target = sheet.querySelector('[data-autofocus]') || sheet;
+      try { target.focus({ preventScroll: true }); } catch (err) { /* ignore */ }
+    });
+    return entry;
+  }
+
+  function confirm({ title, message = '', yes = 'Yes', no = 'No', icon = '❓', danger = false }) {
+    return new Promise(resolve => {
+      const entry = open({
+        center: true,
+        label: title,
+        html: `<div class="dlg"><div class="dlg-icon" aria-hidden="true">${icon}</div><h2 class="display">${Util.esc(title)}</h2>${message ? `<p>${message}</p>` : ''}
+          <div class="dlg-actions"><button class="btn ${danger ? 'btn-danger' : 'btn-good'}" data-r="yes" data-autofocus>${Util.esc(yes)}</button><button class="btn btn-ghost" data-r="no">${Util.esc(no)}</button></div></div>`,
+        onClose: r => resolve(r === true),
+      });
+      entry.sheet.addEventListener('click', e => {
+        const b = e.target.closest('[data-r]');
+        if (!b) return;
+        AudioEngine.play('tap');
+        entry.close(b.dataset.r === 'yes');
+      });
+    });
+  }
+
+  function toast(html, { kind = '', ms = 2200 } = {}) {
+    const el = document.createElement('div');
+    el.className = `toast ${kind}`;
+    el.innerHTML = html;
+    toastRoot.appendChild(el);
+    while (toastRoot.children.length > 3) toastRoot.firstElementChild.remove();
+    setTimeout(() => {
+      el.classList.add('out');
+      setTimeout(() => el.remove(), 260);
+    }, ms);
+  }
+
+  function announce(text) {
+    announcer.textContent = '';
+    setTimeout(() => { announcer.textContent = text; }, 40);
+  }
+
+  return {
+    open, confirm, toast, announce,
+    top: () => stack[stack.length - 1] || null,
+    get count() { return stack.length; },
+    closeAll() { stack.slice().reverse().forEach(e => e.close()); },
+    clearToasts() { toastRoot.innerHTML = ''; },
+  };
+})();
+
+/* Keeps one history entry above the app so the Android/browser Back button
+   closes sheets, leaves screens or asks before quitting a run. */
+const Nav = (() => {
+  let armed = false;
+  return {
+    init() {
+      try { history.replaceState({ mathSprints: 'root' }, ''); } catch (err) { /* file:// quirks */ }
+      window.addEventListener('popstate', e => {
+        if (e.state && e.state.mathSprints === 'guard') { armed = true; return; }
+        armed = false;
+        if (App.handleBack()) Nav.arm();
+      });
+    },
+    arm() {
+      if (armed) return;
+      try { history.pushState({ mathSprints: 'guard' }, ''); armed = true; } catch (err) { armed = false; }
+    },
+  };
+})();
+
+/* Keeps every wallet chip in sync and makes it bounce when stars arrive. */
+const Wallet = {
+  shown: null,
+  html(sm = false) {
+    const pts = Profile.points;
+    return `<${sm ? 'div' : 'button'} class="wallet${sm ? ' sm' : ''}" ${sm ? '' : 'data-action="shop"'} aria-label="${pts} stars${sm ? '' : ', open the shop'}"><span class="star-ico" aria-hidden="true">⭐</span><b data-wallet>${pts}</b></${sm ? 'div' : 'button'}>`;
+  },
+  sync() {
+    const pts = Profile.points;
+    const grew = this.shown !== null && pts > this.shown;
+    this.shown = pts;
+    document.querySelectorAll('[data-wallet]').forEach(el => {
+      el.textContent = String(pts);
+      const chip = el.closest('.wallet');
+      if (!chip) return;
+      chip.setAttribute('aria-label', `${pts} stars${chip.tagName === 'BUTTON' ? ', open the shop' : ''}`);
+      if (grew) { chip.classList.remove('bump'); void chip.offsetWidth; chip.classList.add('bump'); }
+    });
+  },
+};
+
+/* =====================================================================
+   12. SCREENS — Hub, Level sheet, Shop, Grown-ups settings
+   ===================================================================== */
+const Screens = {};
+
+function pipsHTML(done) {
+  return Array.from({ length: CONFIG.PERFECT_RUNS_TO_UNLOCK }, (_, i) => `<i class="${i < done ? 'on' : ''}"></i>`).join('');
+}
+
+/* Press-and-hold gate (kid-proofing for the Grown-ups panel). */
+function bindHold(btn, ms, onDone) {
+  if (!btn) return;
+  let timer = 0;
+  const cancel = () => {
+    if (timer) { clearTimeout(timer); timer = 0; }
+    btn.classList.remove('holding');
+  };
+  const start = e => {
+    if (e.type === 'keydown' && (e.repeat || (e.key !== 'Enter' && e.key !== ' '))) return;
+    if (e.type === 'pointerdown' && e.button !== 0) return;
+    e.preventDefault();
+    cancel();
+    btn.classList.add('holding');
+    timer = setTimeout(() => {
+      timer = 0;
+      btn.classList.remove('holding');
+      btn.dataset.fired = '1';
+      AudioEngine.play('unlock');
+      onDone();
+    }, ms);
+  };
+  btn.addEventListener('pointerdown', start);
+  btn.addEventListener('keydown', start);
+  ['pointerup', 'pointerleave', 'pointercancel', 'keyup', 'blur'].forEach(ev => btn.addEventListener(ev, cancel));
+  btn.addEventListener('contextmenu', e => e.preventDefault());
+  btn.addEventListener('click', () => {
+    if (btn.dataset.fired) { delete btn.dataset.fired; return; }
+    UI.toast('Grown-ups: press and hold ⚙️ for 2 seconds');
+  });
+}
+
+function levelCardHTML(n) {
+  const L = Profile.level(n);
+  const done = Math.min(L.perfectPractices, CONFIG.PERFECT_RUNS_TO_UNLOCK);
+  const unlocked = Profile.isSprintUnlocked(n);
+  const rq = L.reviewQueue.length;
+  const mastered = L.sprintPerfects > 0;
+  let sprint;
+  if (!unlocked) sprint = '<span class="lc-sprint locked">🔒 Sprint</span>';
+  else if (L.sprintRuns === 0) sprint = '<span class="lc-sprint ready">🏁 Sprint!</span>';
+  else sprint = `<span class="lc-sprint best">🏆 ${L.sprintBest}/${CONFIG.SPRINT_LENGTH}</span><span class="lc-runs">${Util.plural(L.sprintRuns, 'run', 'runs')}</span>`;
+  const label = `Level ${n}. Practice: ${unlocked ? 'complete' : `${done} of ${CONFIG.PERFECT_RUNS_TO_UNLOCK} perfect runs`}. Final Sprint ${unlocked ? (L.sprintRuns ? `best score ${L.sprintBest} of ${CONFIG.SPRINT_LENGTH}, ${Util.plural(L.sprintRuns, 'run', 'runs')}` : 'unlocked') : 'locked'}.${rq ? ` ${Util.plural(rq, 'rematch', 'rematches')} waiting.` : ''}`;
+  return `<li><button class="level-card panel${mastered ? ' mastered' : ''}" data-level="${n}" aria-label="${Util.esc(label)}">
+    ${mastered ? '<span class="lc-crown" aria-hidden="true">👑</span>' : ''}
+    ${rq ? `<span class="lc-review" aria-hidden="true">🔁${rq}</span>` : ''}
+    <span class="lc-num display" aria-hidden="true">×${n}</span>
+    <span class="pips lc-pips" aria-hidden="true">${pipsHTML(done)}</span>
+    <span class="lc-label" aria-hidden="true">Practice:</span>
+    <span class="lc-value" aria-hidden="true">${unlocked ? 'Complete ✅' : `${done}/${CONFIG.PERFECT_RUNS_TO_UNLOCK}`}</span>
+    <span class="lc-foot" aria-hidden="true">${sprint}</span>
+  </button></li>`;
+}
+
+function openLevelSheet(n) {
+  const L = Profile.level(n);
+  const unlocked = Profile.isSprintUnlocked(n);
+  const done = Math.min(L.perfectPractices, CONFIG.PERFECT_RUNS_TO_UNLOCK);
+  const need = CONFIG.PERFECT_RUNS_TO_UNLOCK - done;
+  const rq = L.reviewQueue.length;
+  const needText = `${need} more perfect practice${need === 1 ? '' : 's'}`;
+  const html = `<div class="sheet-grip" aria-hidden="true"></div>
+    <div class="sheet-head">
+      <span class="sheet-badge display" aria-hidden="true">×${n}<br>÷${n}</span>
+      <div><h2 class="display">Level ${n}</h2><p class="sheet-sub">Multiply and divide with ${n}</p></div>
+    </div>
+    <ul class="sheet-stats">
+      <li><span>Perfect practices</span><b><span class="pips" aria-hidden="true">${pipsHTML(done)}</span> ${unlocked ? 'Complete ✅' : `${done}/${CONFIG.PERFECT_RUNS_TO_UNLOCK}`}</b></li>
+      ${rq ? `<li><span>🔁 Rematches waiting</span><b>${rq}</b></li>` : ''}
+      ${L.sprintRuns ? `<li><span>🏆 Best sprint</span><b>${L.sprintBest}/${CONFIG.SPRINT_LENGTH} · ${Util.plural(L.sprintRuns, 'run', 'runs')}</b></li>` : ''}
+      ${L.sprintPerfects ? `<li><span>👑 Perfect sprints</span><b>${L.sprintPerfects}${L.sprintBestTimeMs !== null ? ` · fastest ${Util.fmtSecs(L.sprintBestTimeMs)}` : ''}</b></li>` : ''}
+    </ul>
+    <div class="sheet-actions">
+      <button class="btn btn-big btn-good" data-go="practice" data-autofocus>▶ Practice<small>${CONFIG.PRACTICE_LENGTH} questions · no timer · aim for 10/10</small></button>
+      <button class="btn btn-big" data-go="sprint"${unlocked ? '' : ' aria-disabled="true"'}>${unlocked ? '⚡ Final Sprint' : '🔒 Final Sprint'}<small>${unlocked ? `${CONFIG.SPRINT_LENGTH} questions · ${Util.fmtTime(CONFIG.SPRINT_DURATION_MS)} on the clock` : `${needText} to unlock`}</small></button>
+    </div>
+    <button class="btn btn-ghost sheet-close" data-go="close">Close</button>`;
+  const entry = UI.open({ html, label: `Level ${n}`, className: 'level-sheet' });
+  entry.sheet.addEventListener('click', e => {
+    const b = e.target.closest('[data-go]');
+    if (!b) return;
+    const go = b.dataset.go;
+    if (go === 'close') { AudioEngine.play('tap'); entry.close(); return; }
+    if (go === 'sprint' && !unlocked) {
+      AudioEngine.play('nope');
+      FX.shake(b);
+      UI.toast(`🔒 Score 10/10 in ${needText} to unlock the Final Sprint!`);
+      return;
+    }
+    AudioEngine.play('tap');
+    entry.close();
+    App.go('play', { mode: go, level: n });
+  });
+}
+
+Screens.hub = () => {
+  const el = document.createElement('section');
+  el.className = 'screen scroll hub';
+  el.setAttribute('aria-labelledby', 'hub-title');
+  let off = null;
+
+  function render() {
+    const s = Profile.state;
+    const scroll = el.scrollTop;
+    el.innerHTML = `
+      <header class="hub-head">
+        <div class="brand">${MASCOT_SVG()}<h1 id="hub-title" class="title display">Math <span>Sprints</span></h1></div>
+        ${Wallet.html()}
+      </header>
+      <nav class="hub-actions" aria-label="Main menu">
+        <button class="btn btn-alt" data-action="shop"><span aria-hidden="true">🛍️</span> Shop</button>
+        <button class="icon-btn" data-action="music" aria-pressed="${s.settings.music}" aria-label="Focus music">🎵</button>
+        <button class="icon-btn" data-action="sfx" aria-pressed="${s.settings.sfx}" aria-label="Sound effects">${s.settings.sfx ? '🔊' : '🔇'}</button>
+        <button class="icon-btn hold-btn" data-hold="settings" aria-label="Grown-ups settings (press and hold)"><span aria-hidden="true">⚙️</span><svg class="hold-ring" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="23"/></svg></button>
+      </nav>
+      <p class="hub-tag">Pick your times table, champ!</p>
+      <ol class="level-grid" aria-label="Levels">${CONFIG.LEVELS.map(levelCardHTML).join('')}</ol>
+      ${Store.healthy ? '' : '<p class="notice">⚠️ This browser is not saving progress (private mode?). Stars will vanish when the page closes.</p>'}
+      <p class="hub-foot">Score 10/10 in 3 practices to unlock each Final Sprint ⚡</p>`;
+    el.scrollTop = scroll;
+    bindHold(el.querySelector('[data-hold="settings"]'), CONFIG.SETTINGS_HOLD_MS, () => App.go('settings'));
+    Wallet.sync();
+  }
+
+  el.addEventListener('click', e => {
+    const t = e.target.closest('[data-action],[data-level]');
+    if (!t) return;
+    AudioEngine.play('tap');
+    if (t.dataset.level) { openLevelSheet(Number(t.dataset.level)); return; }
+    const action = t.dataset.action;
+    if (action === 'shop') App.go('shop');
+    else if (action === 'music') {
+      const on = !Profile.state.settings.music;
+      Profile.setSetting('music', on);
+      AudioEngine.setMusic(on);
+      UI.toast(on ? '🎵 Focus music on' : '🎵 Focus music off');
+    } else if (action === 'sfx') {
+      const on = !Profile.state.settings.sfx;
+      Profile.setSetting('sfx', on);
+      AudioEngine.setSfx(on);
+      AudioEngine.play('tap');
+    }
+  });
+
+  return {
+    name: 'hub',
+    el,
+    mount() {
+      render();
+      off = Bus.on('profile:change', ({ reason }) => { if (reason !== 'earn') render(); });
+    },
+    destroy() { if (off) off(); },
+    onBack: () => false,
+  };
+};
+
+Screens.shop = (params = {}) => {
+  const el = document.createElement('section');
+  el.className = 'screen scroll shop';
+  el.setAttribute('aria-label', 'Shop');
+  let tab = params.tab === 'powers' ? 'powers' : 'themes';
+  let busy = false;
+
+  function themeCard(t) {
+    const owned = Profile.ownsTheme(t.id);
+    const active = Profile.state.themes.active === t.id;
+    let action;
+    if (active) action = '<button class="btn btn-good" aria-disabled="true" data-noop="1">✓ Equipped</button>';
+    else if (owned) action = `<button class="btn btn-alt" data-equip="${t.id}">Equip</button>`;
+    else if (Profile.canAfford(t.cost)) action = `<button class="btn" data-buy-theme="${t.id}">Buy</button>`;
+    else action = `<button class="btn" data-buy-theme="${t.id}" aria-disabled="true">Need ${t.cost - Profile.points} more ⭐</button>`;
+    return `<article class="item panel">
+      <div class="preview" data-theme="${t.id}" aria-hidden="true"><span class="pv-eq">7×8=56</span><span class="key">5</span><span class="key key-ok">✓</span><span class="key key-del">⌫</span><span class="key">9</span></div>
+      <div>
+        <h3 class="display">${t.icon} ${Util.esc(t.name)}</h3>
+        <p>${Util.esc(t.blurb)}</p>
+        <div class="item-row"><span class="price">${owned ? '<span class="owned">Owned</span>' : (t.cost ? `⭐ ${t.cost}` : 'Free')}</span>${action}</div>
+      </div>
+    </article>`;
+  }
+
+  function powerCard(p) {
+    const afford = Profile.canAfford(p.cost);
+    return `<article class="item panel">
+      <div class="pu-icon" aria-hidden="true">${p.icon}</div>
+      <div>
+        <h3 class="display">${Util.esc(p.name)}</h3>
+        <p>${Util.esc(p.blurb)}</p>
+        <div class="rule">${Util.esc(p.rule)}</div>
+        <div class="item-row"><span class="price">⭐ ${p.cost}</span><span class="owned">You have: <b>${Profile.count(p.id)}</b></span>
+          <button class="btn" data-buy-power="${p.id}"${afford ? '' : ' aria-disabled="true"'}>${afford ? 'Buy' : `Need ${p.cost - Profile.points} more ⭐`}</button></div>
+      </div>
+    </article>`;
+  }
+
+  function render() {
+    const scroll = el.scrollTop;
+    el.innerHTML = `
+      <header class="top-row">
+        <button class="icon-btn" data-action="back" aria-label="Back to levels">⬅️</button>
+        <h1 class="display">Shop</h1>
+        ${Wallet.html()}
+      </header>
+      <div class="tabs" role="tablist" aria-label="Shop sections">
+        <button class="tab" role="tab" id="tab-themes" aria-controls="shop-panel" aria-selected="${tab === 'themes'}" data-tab="themes">🎨 Themes</button>
+        <button class="tab" role="tab" id="tab-powers" aria-controls="shop-panel" aria-selected="${tab === 'powers'}" data-tab="powers">⚡ Power-ups</button>
+      </div>
+      <div class="shop-list" id="shop-panel" role="tabpanel" aria-labelledby="tab-${tab}">
+        ${tab === 'themes' ? THEMES.map(themeCard).join('') : POWERUPS.map(powerCard).join('')}
+      </div>`;
+    el.scrollTop = scroll;
+    Wallet.sync();
+  }
+
+  async function buy(kind, id, btn) {
+    const item = kind === 'theme' ? THEME_BY_ID.get(id) : POWERUP_BY_ID.get(id);
+    if (!item) return;
+    if (kind === 'theme' && Profile.ownsTheme(id)) { render(); return; }
+    if (!Profile.canAfford(item.cost)) {
+      AudioEngine.play('nope');
+      FX.shake(btn);
+      UI.toast(`You need ${item.cost - Profile.points} more ⭐. Practice to earn stars!`);
+      return;
+    }
+    AudioEngine.play('tap');
+    busy = true;
+    const ok = await UI.confirm({
+      title: `Buy ${item.name}?`,
+      message: `It costs ⭐ ${item.cost}. You have ⭐ ${Profile.points}.`,
+      yes: 'Yes, buy it!', no: 'Not now', icon: item.icon,
+    });
+    busy = false;
+    if (!ok) return;
+    const res = kind === 'theme' ? Profile.buyTheme(id) : Profile.buyPowerup(id);
+    if (!res.ok) {
+      AudioEngine.play('nope');
+      UI.toast(res.reason === 'funds' ? 'Not enough stars yet!' : res.reason === 'owned' ? 'You already own this!' : 'That could not be bought.', { kind: 'bad' });
+      render();
+      return;
+    }
+    AudioEngine.play('coin');
+    FX.confetti(70);
+    UI.announce(`${item.name} bought. ${Profile.points} stars left.`);
+    render();
+    if (kind === 'theme') {
+      busy = true;
+      const equip = await UI.confirm({ title: `${item.name} unlocked!`, message: 'Want to use it right now?', yes: 'Equip it!', no: 'Later', icon: item.icon });
+      busy = false;
+      if (equip && Profile.equipTheme(id)) App.applyTheme();
+      render();
+    } else {
+      UI.toast(`${item.icon} ${Util.esc(item.name)} added! You have ${Profile.count(id)}.`, { kind: 'good' });
+    }
+  }
+
+  el.addEventListener('click', e => {
+    const t = e.target.closest('button');
+    if (!t || busy) return;
+    if (t.dataset.action === 'back') { AudioEngine.play('tap'); App.go('hub'); return; }
+    if (t.dataset.action === 'shop' || t.dataset.noop) { AudioEngine.play('tap'); return; }
+    if (t.dataset.tab) {
+      AudioEngine.play('tap');
+      if (tab !== t.dataset.tab) { tab = t.dataset.tab; el.scrollTop = 0; render(); }
+      return;
+    }
+    if (t.dataset.equip) {
+      AudioEngine.play('tap');
+      const theme = THEME_BY_ID.get(t.dataset.equip);
+      if (theme && Profile.equipTheme(theme.id)) {
+        App.applyTheme();
+        AudioEngine.play('whoosh');
+        UI.toast(`${theme.icon} ${Util.esc(theme.name)} equipped!`, { kind: 'good' });
+      }
+      render();
+      return;
+    }
+    if (t.dataset.buyTheme) { buy('theme', t.dataset.buyTheme, t); return; }
+    if (t.dataset.buyPower) buy('power', t.dataset.buyPower, t);
+  });
+
+  return { name: 'shop', el, mount: render, destroy() {}, onBack() { App.go('hub'); return true; } };
+};
+
+Screens.settings = () => {
+  const el = document.createElement('section');
+  el.className = 'screen scroll settings';
+  el.setAttribute('aria-label', 'Grown-ups settings');
+  let range = Profile.range;
+  let repeatTimer = 0;
+  let repeatInterval = 0;
+  let repeated = false;
+
+  function rangeNote() {
+    return `Biggest answer: ${9 * range.max} · up to ${EquationFactory.maxDigits(range)} digits on the keypad.`;
+  }
+
+  function render() {
+    const s = Profile.state;
+    const totals = CONFIG.LEVELS.reduce((acc, n) => {
+      const L = Profile.level(n);
+      acc.perfect += L.perfectPractices; acc.runs += L.practiceRuns; acc.sprints += L.sprintRuns; acc.review += L.reviewQueue.length;
+      return acc;
+    }, { perfect: 0, runs: 0, sprints: 0, review: 0 });
+    el.innerHTML = `
+      <header class="top-row">
+        <button class="icon-btn" data-action="back" aria-label="Back to levels">⬅️</button>
+        <h1 class="display">Grown-ups</h1>
+      </header>
+      <div class="settings-list">
+        <section class="set-card panel" aria-labelledby="set-range">
+          <h2 id="set-range" class="display">Number range</h2>
+          <p>The second number in every equation is picked from this range (default 1–25). Zero is never used.</p>
+          <div class="stepper"><label id="lbl-min">From</label><button class="icon-btn" data-step="min:-1" aria-label="Lower the smallest number">➖</button><output aria-labelledby="lbl-min" data-out="min" aria-live="polite">${range.min}</output><button class="icon-btn" data-step="min:1" aria-label="Raise the smallest number">➕</button></div>
+          <div class="stepper"><label id="lbl-max">To</label><button class="icon-btn" data-step="max:-1" aria-label="Lower the biggest number">➖</button><output aria-labelledby="lbl-max" data-out="max" aria-live="polite">${range.max}</output><button class="icon-btn" data-step="max:1" aria-label="Raise the biggest number">➕</button></div>
+          <p data-range-note>${rangeNote()}</p>
+          <button class="btn btn-ghost" data-action="range-default">Reset to ${CONFIG.DEFAULT_RANGE.min}–${CONFIG.DEFAULT_RANGE.max}</button>
+        </section>
+        <section class="set-card panel" aria-labelledby="set-sound">
+          <h2 id="set-sound" class="display">Sound &amp; feel</h2>
+          <div class="toggle-row"><span id="t-sfx">Sound effects</span><button class="switch" role="switch" aria-checked="${s.settings.sfx}" aria-labelledby="t-sfx" data-toggle="sfx"></button></div>
+          <div class="toggle-row"><span id="t-music">Focus music</span><button class="switch" role="switch" aria-checked="${s.settings.music}" aria-labelledby="t-music" data-toggle="music"></button></div>
+          <div class="toggle-row"><span id="t-hap">Vibration (Android)</span><button class="switch" role="switch" aria-checked="${s.settings.haptics}" aria-labelledby="t-hap" data-toggle="haptics"></button></div>
+        </section>
+        <section class="set-card panel" aria-labelledby="set-stats">
+          <h2 id="set-stats" class="display">Progress</h2>
+          <div class="stat-grid">
+            <div><b>${s.userPoints}</b>stars to spend</div>
+            <div><b>${s.lifetimePoints}</b>stars earned</div>
+            <div><b>${totals.perfect}</b>perfect practices</div>
+            <div><b>${totals.runs}</b>practice runs</div>
+            <div><b>${totals.sprints}</b>sprints</div>
+            <div><b>${totals.review}</b>facts to rematch</div>
+          </div>
+          <p>${Store.healthy ? 'Progress is saved on this device only. Nothing is ever sent anywhere.' : '⚠️ This browser is not saving progress (private mode or blocked storage).'}</p>
+        </section>
+        <section class="set-card panel" aria-labelledby="set-reset">
+          <h2 id="set-reset" class="display">Start over</h2>
+          <p>Erase all stars, themes, power-ups and level progress on this device.</p>
+          <button class="btn btn-danger" data-action="reset">Reset all progress</button>
+        </section>
+      </div>`;
+  }
+
+  function updateRange() {
+    const minOut = el.querySelector('[data-out="min"]');
+    const maxOut = el.querySelector('[data-out="max"]');
+    const note = el.querySelector('[data-range-note]');
+    if (minOut) minOut.textContent = String(range.min);
+    if (maxOut) maxOut.textContent = String(range.max);
+    if (note) note.textContent = rangeNote();
+  }
+
+  function clearRepeat() {
+    clearTimeout(repeatTimer);
+    clearInterval(repeatInterval);
+    repeatTimer = 0;
+    repeatInterval = 0;
+  }
+
+  function step(spec) {
+    const [which, d] = spec.split(':');
+    let { min, max } = range;
+    if (which === 'min') min += Number(d); else max += Number(d);
+    const lim = CONFIG.RANGE_LIMIT;
+    if (min < lim.min || max > lim.max || min > max) {
+      AudioEngine.play('nope');
+      clearRepeat();
+      return;
+    }
+    range = Profile.setRange(min, max);
+    AudioEngine.play('tap');
+    updateRange();
+  }
+
+  el.addEventListener('pointerdown', e => {
+    const b = e.target.closest('[data-step]');
+    if (!b) return;
+    repeated = false;
+    clearRepeat();
+    repeatTimer = setTimeout(() => {
+      repeated = true;
+      repeatInterval = setInterval(() => step(b.dataset.step), 70);
+    }, 450);
+  });
+
+  el.addEventListener('click', async e => {
+    const t = e.target.closest('button');
+    if (!t) return;
+    if (t.dataset.step) {
+      if (repeated) { repeated = false; return; }
+      step(t.dataset.step);
+      return;
+    }
+    AudioEngine.play('tap');
+    if (t.dataset.action === 'back') { App.go('hub'); return; }
+    if (t.dataset.toggle) {
+      const key = t.dataset.toggle;
+      const on = !Profile.state.settings[key];
+      Profile.setSetting(key, on);
+      if (key === 'sfx') AudioEngine.setSfx(on);
+      if (key === 'music') AudioEngine.setMusic(on);
+      if (key === 'haptics' && on) FX.vibrate(40);
+      t.setAttribute('aria-checked', String(on));
+      return;
+    }
+    if (t.dataset.action === 'range-default') {
+      range = Profile.setRange(CONFIG.DEFAULT_RANGE.min, CONFIG.DEFAULT_RANGE.max);
+      updateRange();
+      UI.toast(`Range reset to ${range.min}–${range.max}`);
+      return;
+    }
+    if (t.dataset.action === 'reset') {
+      const ok = await UI.confirm({ title: 'Erase everything?', message: 'All stars, themes, power-ups and progress on this device will be deleted. This cannot be undone.', yes: 'Erase', no: 'Cancel', icon: '⚠️', danger: true });
+      if (!ok) return;
+      const sure = await UI.confirm({ title: 'Really sure?', message: 'Last chance: tap Erase to start again from zero.', yes: 'Erase', no: 'Keep it', icon: '🗑️', danger: true });
+      if (!sure) return;
+      Profile.reset();
+      App.applyTheme();
+      range = Profile.range;
+      render();
+      UI.toast('Progress erased. Fresh start! 🌱');
+    }
+  });
+
+  return {
+    name: 'settings',
+    el,
+    mount() {
+      render();
+      window.addEventListener('pointerup', clearRepeat);
+      window.addEventListener('pointercancel', clearRepeat);
+    },
+    destroy() {
+      clearRepeat();
+      window.removeEventListener('pointerup', clearRepeat);
+      window.removeEventListener('pointercancel', clearRepeat);
+    },
+    onBack() { App.go('hub'); return true; },
+  };
+};
+
+/* =====================================================================
+   13. PLAY SCREEN — equation pane (top) + tactile keypad (bottom)
+   ===================================================================== */
+const CHEERS = ['Awesome!', 'On fire!', 'Math wizard!', 'Unstoppable!', 'Super brain!', 'Legendary!'];
+const STREAK_CALLOUTS = new Set([3, 5, 10, 15, 20, 25, 30, 35, 40]);
+const RING_CIRCUMFERENCE = 2 * Math.PI * 28;
+
+Screens.play = ({ mode, level }) => {
+  const session = new GameSession({ mode, level });
+  const isSprint = mode === 'sprint';
+  const el = document.createElement('section');
+  el.className = `screen play mode-${mode}`;
+  el.setAttribute('aria-label', `Level ${level} ${isSprint ? 'Final Sprint' : 'practice'}`);
+  const trayIds = isSprint ? ['timeWarp', 'freezeRay', 'secondChance'] : ['secondChance'];
+
+  el.innerHTML = `
+    <div class="pane-eq">
+      <header class="play-top">
+        <button class="icon-btn sm" data-action="exit" aria-label="Leave this run">✖️</button>
+        ${isSprint ? '<button class="icon-btn sm" data-action="pause" aria-label="Pause">⏸️</button>' : '<button class="icon-btn sm" data-action="restart" aria-label="Restart this practice" hidden>↻</button>'}
+        <div class="play-title display">Level ${level} · ${isSprint ? 'Sprint' : 'Practice'}</div>
+        ${Wallet.html(true)}
+      </header>
+      <div class="play-status">
+        ${isSprint ? `
+          <div class="timer" data-timer role="timer" aria-label="Time left">
+            <svg viewBox="0 0 64 64" aria-hidden="true"><circle class="ring-bg" cx="32" cy="32" r="28"/><circle class="ring" cx="32" cy="32" r="28" data-ring/></svg>
+            <span class="timer-text" data-time>${Util.fmtTime(CONFIG.SPRINT_DURATION_MS)}</span>
+          </div>
+          <span class="freeze-badge" data-freeze hidden>❄️ <b data-freeze-s>5</b>s</span>
+          <span class="eq-count">Equation <b data-qnum>1</b>/${session.total}</span>
+          <span class="score-pill" aria-label="Correct answers">✓ <b data-score>0</b></span>
+          <div class="progress" aria-hidden="true"><i data-progress></i></div>`
+        : `
+          <span class="eq-count">Equation <b data-qnum>1</b>/${session.total}</span>
+          <span class="dots" aria-hidden="true">${session.queue.map(e => `<i class="${e.isReview ? 'rv' : ''}"></i>`).join('')}</span>`}
+      </div>
+      <div class="eq-stage">
+        <div class="eq-card panel">
+          <div class="eq" data-eq aria-hidden="true"></div>
+          <div class="eq-sub" data-sub></div>
+        </div>
+        <div class="countdown" data-countdown hidden></div>
+      </div>
+      <div class="tray" data-tray>
+        ${trayIds.map(id => {
+          const p = POWERUP_BY_ID.get(id);
+          return `<button class="chip" data-power="${id}"><span class="ico" aria-hidden="true">${p.icon}</span><span class="chip-label${id === 'timeWarp' ? ' keep' : ''}">${p.chip}</span><span class="count" data-count>0</span>${id === 'timeWarp' ? '<span class="chip-note" data-note></span>' : ''}</button>`;
+        }).join('')}
+      </div>
+    </div>
+    <div class="keypad" role="group" aria-label="Number pad">
+      ${['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(k => `<button class="key" data-key="${k}" aria-label="${k}">${k}</button>`).join('')}
+      <button class="key key-del" data-key="del" aria-label="Delete (hold to clear)"><span class="key-sym" aria-hidden="true">⌫</span></button>
+      <button class="key" data-key="0" aria-label="0">0</button>
+      <button class="key key-ok" data-key="ok" aria-label="Check answer"><span class="key-sym" aria-hidden="true">✓</span></button>
+    </div>`;
+
+  const $ = sel => el.querySelector(sel);
+  const pane = $('.pane-eq');
+  const card = $('.eq-card');
+  const eqEl = $('[data-eq]');
+  const subEl = $('[data-sub]');
+  const trayEl = $('[data-tray]');
+  const keypad = $('.keypad');
+  const countdownEl = $('[data-countdown]');
+  const qnumEl = $('[data-qnum]');
+  const restartBtn = $('[data-action="restart"]');
+  const dots = isSprint ? [] : Array.from(el.querySelectorAll('.dots i'));
+  const timerEl = $('[data-timer]');
+  const ringEl = $('[data-ring]');
+  const timeEl = $('[data-time]');
+  const freezeEl = $('[data-freeze]');
+  const freezeSEl = $('[data-freeze-s]');
+  const scoreEl = $('[data-score]');
+  const progressEl = $('[data-progress]');
+  let answerEl = null;
+  let answerText = null;
+  let promptEl = null;
+  let pauseEntry = null;
+  let exitOpen = false;
+  let factTimer = 0;
+  let factActive = false;
+  let lastSecond = null;
+  let wasFrozen = false;
+  let delHold = 0;
+  let controller = null;
+
+  /* ---------- rendering helpers ---------- */
+  function fitEquation() {
+    const avail = card.clientWidth - 20;
+    const availH = card.clientHeight;
+    if (avail <= 0 || availH <= 0) return;
+    let size = Math.max(22, Math.min(88, availH * 0.42));
+    eqEl.style.setProperty('--eq-size', `${size}px`);
+    let guard = 0;
+    while (eqEl.scrollWidth > avail && size > 20 && guard < 40) {
+      size = Math.floor(size * 0.93);
+      eqEl.style.setProperty('--eq-size', `${size}px`);
+      guard += 1;
+    }
+  }
+
+  function renderEquation(eq) {
+    eqEl.innerHTML = `<span class="eq-a">${eq.a}</span><span class="eq-op">${EquationFactory.SYMBOL[eq.op]}</span><span class="eq-b">${eq.b}</span><span class="eq-eq">=</span><span class="answer empty" data-answer><span class="answer-text"></span><span class="caret"></span></span>`;
+    answerEl = eqEl.querySelector('[data-answer]');
+    answerText = answerEl.querySelector('.answer-text');
+    fitEquation();
+  }
+
+  function renderInput(value) {
+    if (!answerEl) return;
+    answerText.textContent = value;
+    answerEl.classList.toggle('empty', value === '');
+  }
+
+  function setSub(html) {
+    if (isSprint && factActive) return;
+    subEl.innerHTML = html;
+  }
+
+  function updateDots() {
+    if (isSprint) return;
+    dots.forEach((d, i) => {
+      d.classList.toggle('ok', session.results[i] === 'ok');
+      d.classList.toggle('bad', session.results[i] === 'bad');
+      d.classList.toggle('now', i === session.index && !session.finished);
+    });
+  }
+
+  function updateScore() {
+    if (scoreEl) scoreEl.textContent = String(session.correct);
+    if (progressEl) progressEl.style.width = `${((session.correct + session.wrong) / session.total) * 100}%`;
+  }
+
+  function reasonText(id, reason) {
+    const p = POWERUP_BY_ID.get(id);
+    switch (reason) {
+      case 'none': return `You have no ${p.name} left. Get more in the Shop! 🛍️`;
+      case 'mode': return `${p.icon} ${p.name} only works in the Final Sprint.`;
+      case 'auto': return '🔄 Second Chance pops up by itself if you make a mistake.';
+      case 'limit': return `⏱️ Max ${CONFIG.TIME_WARP_MAX_PER_RUN} Time Warps per sprint!`;
+      case 'active': return '❄️ The clock is already frozen!';
+      default: return 'Not right now. Try on the next question!';
+    }
+  }
+
+  function renderTray() {
+    trayIds.forEach(id => {
+      const chip = trayEl.querySelector(`[data-power="${id}"]`);
+      if (!chip) return;
+      const p = POWERUP_BY_ID.get(id);
+      const n = Profile.count(id);
+      chip.querySelector('[data-count]').textContent = String(n);
+      const note = chip.querySelector('[data-note]');
+      if (note) note.textContent = `${session.used.timeWarp}/${CONFIG.TIME_WARP_MAX_PER_RUN}`;
+      const check = session.canUse(id);
+      const off = id === 'secondChance' ? n === 0 : !check.ok;
+      chip.classList.toggle('off', off);
+      chip.classList.toggle('active', id === 'freezeRay' && !!session.timer && session.timer.frozen);
+      chip.classList.toggle('glow', id === 'secondChance' && session.phase === 'prompt' && n > 0);
+      chip.setAttribute('aria-label', `${p.name}: ${n} left${id === 'timeWarp' ? `, ${session.used.timeWarp} of ${CONFIG.TIME_WARP_MAX_PER_RUN} used this sprint` : ''}`);
+    });
+  }
+
+  function flashFact(eq) {
+    clearTimeout(factTimer);
+    factActive = true;
+    subEl.innerHTML = `<span class="badge fact">✗ ${EquationFactory.text(eq)}</span>`;
+    factTimer = setTimeout(() => {
+      factActive = false;
+      subEl.innerHTML = '';
+    }, CONFIG.SPRINT_FACT_FLASH_MS);
+  }
+
+  function hidePrompt() {
+    if (promptEl) { promptEl.remove(); promptEl = null; }
+  }
+
+  function showPrompt({ eq, charges, timed, windowMs }) {
+    hidePrompt();
+    promptEl = document.createElement('div');
+    promptEl.className = 'prompt panel';
+    promptEl.setAttribute('role', 'alertdialog');
+    promptEl.setAttribute('aria-label', 'Second Chance');
+    promptEl.innerHTML = `
+      <h3 class="display">Oops! Not quite 🙈</h3>
+      <p class="prompt-eq">${eq.a} ${EquationFactory.SYMBOL[eq.op]} ${eq.b} = ?</p>
+      <p>Use a Second Chance to try again?</p>
+      <div class="prompt-actions">
+        <button class="btn btn-good" data-prompt="use">🔄 Try again<small>${Util.plural(charges, 'charge', 'charges')} left</small></button>
+        <button class="btn btn-ghost" data-prompt="skip">${isSprint ? 'Skip ➜' : 'Show me ➜'}</button>
+      </div>
+      ${timed ? `<div class="prompt-timer" aria-hidden="true"><i style="animation-duration:${windowMs}ms"></i></div>` : ''}`;
+    pane.appendChild(promptEl);
+    promptEl.addEventListener('click', e => {
+      const b = e.target.closest('[data-prompt]');
+      if (!b) return;
+      AudioEngine.play('tap');
+      if (b.dataset.prompt === 'use') session.useSecondChance();
+      else session.declineSecondChance();
+    });
+    const first = promptEl.querySelector('[data-prompt="use"]');
+    try { first.focus({ preventScroll: true }); } catch (err) { /* ignore */ }
+    UI.announce('Not quite. Use a Second Chance to try again?');
+  }
+
+  /* ---------- input ---------- */
+  function pressVisual(btn) {
+    btn.classList.add('is-pressed');
+    clearTimeout(btn._pressT);
+    btn._pressT = setTimeout(() => btn.classList.remove('is-pressed'), 140);
+  }
+
+  function handleKey(k) {
+    if (session.paused || session.finished || UI.count > 0) return;
+    if (session.phase !== 'asking') return;
+    const res = session.press(k);
+    if (k === 'ok') {
+      if (!res.ok && res.reason === 'empty') {
+        AudioEngine.play('nope');
+        FX.shake(answerEl);
+        UI.announce('Type an answer first');
+      }
+      return;
+    }
+    if (res.ok) AudioEngine.play('tap');
+    else if (res.reason === 'leading-zero' || res.reason === 'max') {
+      AudioEngine.play('nope');
+      FX.shake(answerEl);
+    }
+  }
+
+  function stopDelHold() {
+    clearTimeout(delHold);
+    delHold = 0;
+  }
+
+  keypad.addEventListener('pointerdown', e => {
+    const btn = e.target.closest('[data-key]');
+    if (!btn) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
+    pressVisual(btn);
+    handleKey(btn.dataset.key);
+    if (btn.dataset.key === 'del') {
+      stopDelHold();
+      delHold = setTimeout(() => {
+        delHold = 0;
+        if (session.phase === 'asking' && session.input) { session.press('clear'); AudioEngine.play('whoosh'); }
+      }, 500);
+    }
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => keypad.addEventListener(ev, stopDelHold));
+  keypad.addEventListener('contextmenu', e => e.preventDefault());
+  keypad.addEventListener('click', e => {
+    if (e.detail !== 0) return; // pointer presses were already handled on pointerdown
+    const btn = e.target.closest('[data-key]');
+    if (!btn) return;
+    pressVisual(btn);
+    handleKey(btn.dataset.key);
+  });
+
+  function onKeyDown(e) {
+    if (e.ctrlKey || e.metaKey || e.altKey || UI.count > 0) return;
+    const k = e.key;
+    const onButton = document.activeElement && document.activeElement.tagName === 'BUTTON' && document.activeElement !== document.body;
+    let key = null;
+    if (/^[0-9]$/.test(k)) key = k;
+    else if (k === 'Backspace' || k === 'Delete') key = 'del';
+    else if (k === 'Enter' && !onButton) key = 'ok';
+    else if (k === 'Escape') { e.preventDefault(); askExit(); return; }
+    else if ((k === 'p' || k === 'P') && isSprint) { e.preventDefault(); if (!session.paused) session.pause('user'); return; }
+    if (!key) return;
+    e.preventDefault();
+    if (session.phase === 'prompt' && key === 'ok') { session.useSecondChance(); return; }
+    const btn = keypad.querySelector(`[data-key="${key}"]`);
+    if (btn) pressVisual(btn);
+    handleKey(key);
+  }
+
+  function onResize() { if (answerEl) fitEquation(); }
+
+  /* ---------- pause / exit ---------- */
+  function showPauseSheet(reason) {
+    if (pauseEntry) return;
+    pauseEntry = UI.open({
+      center: true, opaque: true, dismissible: false, label: 'Paused',
+      html: `<div class="dlg"><div class="dlg-icon" aria-hidden="true">⏸️</div><h2 class="display">Paused</h2>
+        <p>${reason === 'hidden' ? 'We stopped the clock while you were away.' : 'The clock is stopped. Ready when you are!'}</p>
+        <div class="dlg-actions"><button class="btn btn-good" data-p="resume" data-autofocus>▶ Resume</button><button class="btn btn-ghost" data-p="quit">Leave</button></div></div>`,
+      onMount: sheet => sheet.addEventListener('click', async e => {
+        const b = e.target.closest('[data-p]');
+        if (!b) return;
+        AudioEngine.play('tap');
+        const entry = pauseEntry;
+        pauseEntry = null;
+        if (entry) entry.close();
+        if (b.dataset.p === 'resume') { session.resume(); return; }
+        const leave = await UI.confirm({ title: 'Leave this sprint?', message: 'Your sprint will stop. Stars you earned stay in your wallet.', yes: 'Leave', no: 'Keep playing', icon: '🚪', danger: true });
+        if (leave) quit();
+        else session.resume();
+      }),
+    });
+  }
+
+  async function askExit() {
+    if (session.finished || exitOpen || pauseEntry) return;
+    if (session.phase === 'idle') { quit(); return; }
+    exitOpen = true;
+    const wasPaused = session.paused;
+    if (!wasPaused) session.pause('exit');
+    const leave = await UI.confirm({
+      title: 'Leave this run?',
+      message: isSprint ? 'Your sprint will stop. Stars you earned stay in your wallet.' : 'This practice won’t count, but you keep the stars you earned.',
+      yes: 'Leave', no: 'Keep playing', icon: '🚪', danger: true,
+    });
+    exitOpen = false;
+    if (leave) { quit(); return; }
+    if (!wasPaused) session.resume();
+  }
+
+  function quit() {
+    session.abandon();
+    if (App.screen === controller) App.go('hub');
+  }
+
+  /* Pointer presses on game-surface buttons must not steal focus, otherwise
+     Enter would re-trigger the last tapped chip instead of submitting. */
+  el.addEventListener('pointerdown', e => {
+    if (e.target.closest('.play-top button, .tray .chip')) e.preventDefault();
+  });
+
+  el.addEventListener('click', e => {
+    const t = e.target.closest('[data-action],[data-power]');
+    if (!t || session.finished) return;
+    if (t.dataset.power) {
+      const id = t.dataset.power;
+      const res = session.usePowerup(id);
+      if (!res.ok) {
+        AudioEngine.play('nope');
+        FX.shake(t);
+        UI.toast(reasonText(id, res.reason));
+      }
+      renderTray();
+      return;
+    }
+    AudioEngine.play('tap');
+    if (t.dataset.action === 'exit') askExit();
+    else if (t.dataset.action === 'pause') { if (!session.paused) session.pause('user'); }
+    else if (t.dataset.action === 'restart') {
+      session.abandon();
+      App.go('play', { mode: 'practice', level });
+    }
+  });
+
+  /* ---------- session events ---------- */
+  session.on('phase', () => {
+    renderTray();
+    keypad.classList.toggle('locked', session.phase !== 'asking');
+  });
+
+  session.on('countdown', ({ label, final }) => {
+    countdownEl.hidden = false;
+    countdownEl.innerHTML = `<span>${label}</span>`;
+    subEl.innerHTML = '<span class="badge streak">Get ready! ⚡</span>';
+    AudioEngine.play('count', final);
+  });
+
+  session.on('question', ({ eq, index }) => {
+    countdownEl.hidden = true;
+    renderEquation(eq);
+    qnumEl.textContent = String(index + 1);
+    updateDots();
+    updateScore();
+    if (eq.isReview) setSub('<span class="badge rematch">🔁 Rematch!</span>');
+    else if (!factActive) subEl.innerHTML = '';
+    UI.announce(`Equation ${index + 1}: ${eq.a} ${eq.op === 'mul' ? 'times' : 'divided by'} ${eq.b}`);
+  });
+
+  session.on('input', value => renderInput(value));
+
+  session.on('correct', ({ streak, review, retried }) => {
+    if (answerEl) { answerEl.classList.remove('empty', 'bad'); answerEl.classList.add('ok'); }
+    AudioEngine.play('correct');
+    FX.burstFrom(answerEl, isSprint ? 8 : 14);
+    FX.floatText('+1 ⭐', answerEl, el.querySelector('.wallet'));
+    if (review && review.cleared) setSub('<span class="badge good">🏅 Rematch won! Cleared!</span>');
+    else if (review && review.streak === 1) setSub('<span class="badge good">🔁 Nice! Once more to clear it</span>');
+    else if (retried) setSub('<span class="badge good">Phew! Saved by Second Chance 🔄</span>');
+    else if (STREAK_CALLOUTS.has(streak)) setSub(`<span class="badge streak">🔥 ${streak} in a row! ${CHEERS[Math.min(CHEERS.length - 1, Math.floor(streak / 5))]}</span>`);
+    updateDots();
+    updateScore();
+    UI.announce('Correct!');
+  });
+
+  session.on('wrong', () => {
+    if (answerEl) { answerEl.classList.remove('empty'); answerEl.classList.add('bad'); }
+    FX.shake(answerEl);
+    AudioEngine.play('wrong');
+    FX.vibrate(35);
+  });
+
+  session.on('prompt', data => {
+    showPrompt(data);
+    renderTray();
+  });
+
+  session.on('retry', () => {
+    hidePrompt();
+    if (answerEl) answerEl.classList.remove('bad', 'ok');
+    renderInput('');
+    AudioEngine.play('whoosh');
+    setSub('<span class="badge streak">🔄 Second Chance! Try again</span>');
+    renderTray();
+    UI.announce('Try again!');
+  });
+
+  session.on('reveal', ({ eq, given, justFailed }) => {
+    hidePrompt();
+    if (isSprint) {
+      flashFact(eq);
+    } else {
+      if (answerEl) {
+        answerEl.classList.remove('bad', 'empty');
+        answerEl.classList.add('reveal');
+        answerText.innerHTML = `<span class="struck">${Util.esc(given)}</span>${eq.answer}`;
+        fitEquation();
+      }
+      if (justFailed) {
+        subEl.innerHTML = '<span class="badge fail">💔 Perfect run lost. Keep going for ⭐ or tap ↻</span>';
+        if (restartBtn) restartBtn.hidden = false;
+      } else {
+        subEl.innerHTML = `<span class="badge fact">${EquationFactory.text(eq)}</span>`;
+      }
+    }
+    updateDots();
+    updateScore();
+    UI.announce(`The answer is ${eq.answer}.`);
+  });
+
+  session.on('tick', t => {
+    const frac = Math.min(1, t.remaining / CONFIG.SPRINT_DURATION_MS);
+    ringEl.style.strokeDashoffset = String(RING_CIRCUMFERENCE * (1 - frac));
+    const secs = Math.ceil(t.remaining / 1000);
+    if (secs !== lastSecond) {
+      timeEl.textContent = Util.fmtTime(t.remaining);
+      if (lastSecond !== null && secs < lastSecond) {
+        if (secs <= 10 && secs > 0) AudioEngine.play('tick');
+        if (secs === 30 || secs === 10) UI.announce(`${secs} seconds left`);
+      }
+      lastSecond = secs;
+    }
+    timerEl.classList.toggle('warn', t.remaining <= 30000 && t.remaining > 10000);
+    timerEl.classList.toggle('danger', t.remaining <= 10000);
+    const frozen = t.frozen;
+    timerEl.classList.toggle('frozen', frozen);
+    if (frozen) freezeSEl.textContent = String(Math.max(1, Math.ceil(t.freezeLeft / 1000)));
+    if (frozen !== wasFrozen) {
+      wasFrozen = frozen;
+      freezeEl.hidden = !frozen;
+      renderTray();
+    }
+  });
+
+  session.on('warp', () => {
+    AudioEngine.play('warp');
+    FX.floatText('+10s', timerEl, null);
+    if (timerEl) { timerEl.classList.remove('bump'); void timerEl.offsetWidth; timerEl.classList.add('bump'); }
+    UI.toast('⏱️ +10 seconds!', { kind: 'good', ms: 1200 });
+    UI.announce('10 more seconds!');
+    renderTray();
+  });
+
+  session.on('freeze', () => {
+    AudioEngine.play('freeze');
+    UI.toast('❄️ Clock frozen for 5 seconds!', { kind: 'good', ms: 1200 });
+    UI.announce('Clock frozen for 5 seconds');
+    renderTray();
+  });
+
+  session.on('pause', ({ reason }) => {
+    el.classList.add('is-paused');
+    if (reason !== 'exit') showPauseSheet(reason);
+  });
+
+  session.on('resume', () => el.classList.remove('is-paused'));
+
+  session.on('finish', summary => {
+    hidePrompt();
+    el.classList.remove('is-paused');
+    keypad.classList.add('locked');
+    if (pauseEntry) { const p = pauseEntry; pauseEntry = null; p.close(); }
+    if (summary.reason === 'timeout') {
+      clearTimeout(factTimer);
+      factActive = false;
+      subEl.innerHTML = '<span class="badge fail">⏰ Time’s up!</span>';
+      AudioEngine.play('whoosh');
+    }
+    setTimeout(() => {
+      if (App.screen === controller) App.go('results', { summary });
+    }, summary.reason === 'timeout' ? 1000 : 650);
+  });
+
+  controller = {
+    name: 'play',
+    el,
+    session,
+    mount() {
+      window.addEventListener('keydown', onKeyDown);
+      window.addEventListener('resize', onResize);
+      renderTray();
+      session.start();
+    },
+    destroy() {
+      session.abandon();
+      hidePrompt();
+      stopDelHold();
+      clearTimeout(factTimer);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('resize', onResize);
+      if (pauseEntry) { const p = pauseEntry; pauseEntry = null; p.close(); }
+    },
+    onBack() {
+      if (!session.finished) askExit();
+      return true;
+    },
+    onHidden() {
+      if (isSprint && !session.finished && !session.paused && session.phase !== 'idle') session.pause('hidden');
+    },
+  };
+  return controller;
+};
+
+/* =====================================================================
+   14. RESULTS SCREEN
+   ===================================================================== */
+Screens.results = ({ summary }) => {
+  const s = summary;
+  const el = document.createElement('section');
+  el.className = 'screen scroll results';
+  el.setAttribute('aria-label', 'Results');
+  const L = Profile.level(s.level);
+  const unlocked = Profile.isSprintUnlocked(s.level);
+  const missed = s.missed.slice(0, 16).map(m => `<li>${EquationFactory.text(m.eq)}</li>`).join('');
+  let title;
+  let sub;
+  let extra = '';
+  let actions;
+  let celebrate = 'none';
+
+  if (s.mode === 'practice') {
+    const done = Math.min(L.perfectPractices, CONFIG.PERFECT_RUNS_TO_UNLOCK);
+    if (s.perfect) {
+      title = 'Perfect run! 🎉';
+      sub = s.record.justUnlocked ? 'Three perfect runs — you did it!' : `Perfect practices: ${done}/${CONFIG.PERFECT_RUNS_TO_UNLOCK}`;
+      celebrate = s.record.justUnlocked ? 'unlock' : 'perfect';
+    } else {
+      title = s.correct >= 8 ? 'So close! 💪' : s.correct >= 5 ? 'Good effort! 🌟' : 'Keep practicing! 🚀';
+      sub = 'A perfect run needs 10/10. Let’s go again!';
+    }
+    extra += `<div class="res-stats"><span><span class="pips" aria-hidden="true">${pipsHTML(done)}</span> ${unlocked ? 'Practice complete ✅' : `Perfect practices ${done}/${CONFIG.PERFECT_RUNS_TO_UNLOCK}`}</span>`;
+    if (s.reviewCleared) extra += `<span>🏅 ${Util.plural(s.reviewCleared, 'rematch', 'rematches')} cleared</span>`;
+    if (s.reviewLeft) extra += `<span>🔁 ${Util.plural(s.reviewLeft, 'rematch', 'rematches')} waiting</span>`;
+    if (s.used.secondChance) extra += `<span>🔄 ${Util.plural(s.used.secondChance, 'Second Chance', 'Second Chances')} used</span>`;
+    extra += '</div>';
+    if (s.record.justUnlocked) extra = `<div class="unlock-banner">🔓 FINAL SPRINT UNLOCKED!</div>${extra}`;
+    actions = (s.record.justUnlocked || (unlocked && s.perfect))
+      ? `<button class="btn btn-big btn-good" data-go="sprint" data-autofocus>⚡ Start Final Sprint</button>
+         <button class="btn btn-alt" data-go="practice">▶ Practice</button><button class="btn" data-go="hub">🏠 Levels</button>`
+      : `<button class="btn btn-big btn-good" data-go="practice" data-autofocus>▶ Practice again</button>
+         ${unlocked ? '<button class="btn btn-alt" data-go="sprint">⚡ Sprint</button>' : ''}<button class="btn" data-go="hub">🏠 Levels</button>`;
+  } else {
+    const perfect = s.correct === CONFIG.SPRINT_LENGTH;
+    if (perfect) title = 'LEGENDARY! 👑';
+    else if (s.finishedAll) title = 'All 40 done! 🏁';
+    else title = 'Time’s up! ⏰';
+    const accuracy = s.answered ? Math.round((s.correct / s.answered) * 100) : 0;
+    if (s.record.firstRun) sub = '🏆 Your first sprint score!';
+    else if (s.record.newBest) sub = `🏆 New best! (was ${s.record.prevBest})`;
+    else sub = `Best: ${L.sprintBest}/${CONFIG.SPRINT_LENGTH}`;
+    if (perfect || s.record.newBest || s.record.firstRun) celebrate = perfect ? 'unlock' : 'perfect';
+    extra += `<div class="res-stats">
+      <span>🎯 ${accuracy}% right</span>
+      <span>⏱️ ${Util.fmtTime(s.timeUsedMs)} used</span>
+      ${s.finishedAll ? `<span>⚡ ${Util.fmtTime(s.timeLeftMs)} to spare</span>` : `<span>📝 ${s.answered}/${s.total} answered</span>`}
+      ${s.bestStreak >= 3 ? `<span>🔥 Best streak ${s.bestStreak}</span>` : ''}
+      ${s.record.newBestTime ? '<span>🚀 Fastest perfect sprint!</span>' : ''}
+    </div>`;
+    actions = `<button class="btn btn-big btn-good" data-go="sprint" data-autofocus>⚡ Sprint again</button>
+      <button class="btn btn-alt" data-go="practice">▶ Practice</button><button class="btn" data-go="hub">🏠 Levels</button>`;
+  }
+
+  el.innerHTML = `
+    <div class="res-card panel">
+      ${MASCOT_SVG('res-mascot mascot')}
+      <h1 class="res-title display${celebrate !== 'none' ? ' stamp' : ''}">${title}</h1>
+      <p class="res-sub">${sub}</p>
+      <div class="res-score" aria-label="${s.correct} out of ${s.total}">${s.correct}<small>/${s.total}</small></div>
+      <div class="res-points">+${s.points} ⭐</div>
+      ${extra}
+      ${missed ? `<p class="res-list-title">${s.mode === 'practice' ? 'Rematch list — remember these:' : 'Facts to remember:'}</p><ul class="res-list">${missed}</ul>` : ''}
+    </div>
+    <div class="res-actions">${actions}</div>`;
+
+  el.addEventListener('click', e => {
+    const b = e.target.closest('[data-go]');
+    if (!b) return;
+    AudioEngine.play('tap');
+    const go = b.dataset.go;
+    if (go === 'hub') App.go('hub');
+    else App.go('play', { mode: go, level: s.level });
+  });
+
+  return {
+    name: 'results',
+    el,
+    mount() {
+      UI.announce(`${title.replace(/[^\w\s!'’/]/g, '')}. ${s.correct} out of ${s.total}. You earned ${s.points} stars.`);
+      if (celebrate === 'unlock') { AudioEngine.play('unlock'); FX.confetti(170); }
+      else if (celebrate === 'perfect') { AudioEngine.play('fanfare'); FX.confetti(120); }
+      else if (s.points > 0) AudioEngine.play('coin');
+      requestAnimationFrame(() => {
+        const f = el.querySelector('[data-autofocus]');
+        if (f) { try { f.focus({ preventScroll: true }); } catch (err) { /* ignore */ } }
+      });
+    },
+    destroy() {},
+    onBack() { App.go('hub'); return true; },
+  };
+};
+
+/* =====================================================================
+   15. APP — screen router (state machine), theme application, boot
+   ===================================================================== */
+const App = {
+  screen: null,
+  host: document.getElementById('screen-host'),
+  externalChange: false,
+
+  go(name, params = {}) {
+    const factory = Screens[name];
+    if (!factory) return;
+    UI.closeAll();
+    UI.clearToasts();
+    if (this.screen) {
+      try { this.screen.destroy(); } catch (err) { console.error('[MathSprints] destroy', err); }
+      this.screen.el.remove();
+    }
+    if (this.externalChange && name !== 'play') {
+      this.externalChange = false;
+      Profile.reloadFromStorage();
+      this.applyTheme();
+    }
+    const screen = factory(params);
+    this.screen = screen;
+    document.body.classList.toggle('playing', name === 'play');
+    screen.el.setAttribute('tabindex', '-1');
+    this.host.appendChild(screen.el);
+    screen.mount();
+    if (name !== 'hub') Nav.arm();
+    if (name !== 'play' && name !== 'results') {
+      try { screen.el.focus({ preventScroll: true }); } catch (err) { /* ignore */ }
+    }
+  },
+
+  handleBack() {
+    const top = UI.top();
+    if (top) {
+      if (top.dismissible) top.close();
+      return true;
+    }
+    if (this.screen && this.screen.onBack) return this.screen.onBack();
+    return false;
+  },
+
+  applyTheme() {
+    const id = Profile.state.themes.active;
+    document.body.dataset.theme = THEME_BY_ID.has(id) ? id : 'sunny';
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', getComputedStyle(document.body).getPropertyValue('--meta-color').trim() || '#7dd3fc');
+  },
+
+  init() {
+    const status = Profile.load();
+    this.applyTheme();
+    AudioEngine.setSfx(Profile.state.settings.sfx);
+    AudioEngine.setMusic(Profile.state.settings.music);
+    Bus.on('profile:change', () => Wallet.sync());
+    Bus.on('storage:warning', () => UI.toast('⚠️ Progress could not be saved on this device.', { kind: 'bad', ms: 3500 }));
+    // Browsers only allow audio after a user gesture; iOS counts pointerup/touchend/click, not pointerdown.
+    const unlockAudio = () => AudioEngine.unlock();
+    ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'].forEach(ev => window.addEventListener(ev, unlockAudio, { capture: true, passive: true }));
+    document.addEventListener('visibilitychange', () => {
+      AudioEngine.onVisibility(document.hidden);
+      if (document.hidden && this.screen && this.screen.onHidden) this.screen.onHidden();
+    });
+    window.addEventListener('pagehide', () => { if (Profile.state) Store.write(Profile.state); });
+    window.addEventListener('storage', e => {
+      if (e.key !== Store.KEY) return;
+      if (this.screen && this.screen.name === 'play') { this.externalChange = true; return; }
+      if (Profile.reloadFromStorage()) {
+        this.applyTheme();
+        AudioEngine.setSfx(Profile.state.settings.sfx);
+      }
+    });
+    window.addEventListener('resize', () => FX.resize());
+    Nav.init();
+    this.go('hub');
+    if (status === 'corrupt') UI.toast('Saved progress was damaged, so we started fresh.', { kind: 'bad', ms: 4000 });
+    if (!Store.available) UI.toast('⚠️ This browser is not saving progress (private mode?).', { kind: 'bad', ms: 4000 });
+  },
+};
+
+window.MathSprints = Object.freeze({
+  version: '1.0.0', CONFIG, THEMES, POWERUPS, Util, RNG, Bus, Store, Profile,
+  EquationFactory, ReviewQueue, GameSession, SprintTimer, Delay, AudioEngine, UI, App,
+});
+Object.defineProperty(window, 'UserPoints', { get: () => Profile.points, configurable: true });
+
+try {
+  App.init();
+} catch (err) {
+  console.error('[MathSprints] failed to start', err);
+  const host = document.getElementById('screen-host');
+  host.innerHTML = '<section class="screen"><div class="panel" style="padding:20px;margin:auto;text-align:center"><h1 class="display">Oops! 🙈</h1><p>Math Sprints could not start. Please reload the page.</p></div></section>';
+}
+})();
+</script>
+</body>
+</html>
