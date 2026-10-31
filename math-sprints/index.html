@@ -423,15 +423,16 @@ button, .key, .chip, .level-card, .wallet, .tab {
 .dots i.now { transform: scale(1.3); box-shadow: inset 0 0 0 3px var(--accent); }
 .dots i.rv { box-shadow: inset 0 0 0 3px var(--accent-2); }
 .score-pill { font-family: var(--font-num); white-space: nowrap; }
-.timer { position: relative; flex: none; width: 64px; height: 64px; display: grid; place-items: center; }
-.timer svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-.timer .ring-bg { fill: none; stroke: var(--surface); stroke-width: 7; }
-.timer .ring { fill: none; stroke: var(--good); stroke-width: 7; stroke-linecap: round; stroke-dasharray: 175.93; transition: stroke .3s; }
-.timer.warn .ring { stroke: var(--warn); }
-.timer.danger .ring { stroke: var(--bad); }
-.timer.danger { animation: pulse .9s ease-in-out infinite; }
-.timer.frozen .ring { stroke: var(--ice); }
-.timer-text { position: relative; font-family: var(--font-num); font-weight: 900; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.timer { position: relative; flex: 1; min-width: 0; height: 52px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: var(--pill); background: var(--chip-bg); color: var(--chip-ink); box-shadow: inset 0 0 0 3px var(--good), var(--surface-shadow); overflow: hidden; text-shadow: none; transition: box-shadow .3s; }
+.timer-fill { position: absolute; inset: 0; background: var(--good); opacity: .4; transform-origin: left center; transition: background .3s; }
+.timer.warn { box-shadow: inset 0 0 0 3px var(--warn), var(--surface-shadow); }
+.timer.warn .timer-fill { background: var(--warn); }
+.timer.danger { box-shadow: inset 0 0 0 3px var(--bad), var(--surface-shadow); animation: pulse .9s ease-in-out infinite; }
+.timer.danger .timer-fill { background: var(--bad); }
+.timer.frozen { box-shadow: inset 0 0 0 3px var(--ice), var(--surface-shadow); }
+.timer.frozen .timer-fill { background: var(--ice); }
+.timer-ico { position: relative; font-size: 1.3rem; line-height: 1; }
+.timer-text { position: relative; font-family: var(--font-num); font-weight: 900; font-size: 1.75rem; line-height: 1; font-variant-numeric: tabular-nums; }
 .freeze-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: var(--pill); background: var(--ice); color: #ffffff; font-weight: 900; font-size: .95rem; animation: pulse 1s ease-in-out infinite; text-shadow: none; }
 .progress { flex-basis: 100%; height: 12px; border-radius: var(--pill); background: var(--surface); box-shadow: inset 0 0 0 2px var(--surface-border); overflow: hidden; }
 .progress > i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, var(--accent-2), var(--accent)); transition: width .25s ease-out; }
@@ -583,7 +584,7 @@ button, .key, .chip, .level-card, .wallet, .tab {
    9. RESPONSIVE & ACCESSIBILITY
    ===================================================================== */
 @media (min-width: 600px) { .screen-host { border-left: 1px solid rgba(255,255,255,.12); border-right: 1px solid rgba(255,255,255,.12); } }
-@media (max-height: 640px) { .timer { width: 54px; height: 54px; } .play-status { gap: 4px 8px; } .tray { min-height: 48px; } .eq-sub { min-height: 1.7em; } }
+@media (max-height: 640px) { .timer { height: 48px; } .timer-text { font-size: 1.55rem; } .play-status { gap: 4px 8px; } .tray { min-height: 48px; } .eq-sub { min-height: 1.7em; } }
 @media (max-width: 430px) {
   .mode-sprint .tray { flex-wrap: nowrap; gap: 6px; }
   .mode-sprint .chip { min-width: 0; padding: 6px 10px; gap: 4px; font-size: .92rem; }
@@ -591,8 +592,6 @@ button, .key, .chip, .level-card, .wallet, .tab {
 }
 @media (max-height: 700px) {
   .play { grid-template-rows: minmax(0, 50fr) minmax(0, 50fr); }
-  .mode-sprint .timer { width: 50px; height: 50px; }
-  .mode-sprint .timer-text { font-size: .95rem; }
   .mode-sprint .progress { height: 8px; }
   .pane-eq { gap: 5px; }
   .keypad { margin-bottom: calc(var(--safe-b) + 8px); padding-top: 4px; padding-bottom: 4px; }
@@ -729,6 +728,7 @@ const RNG = (() => {
   return {
     random,
     int: (lo, hi) => lo + Math.floor(random() * (hi - lo + 1)),
+    pick: list => list[Math.floor(random() * list.length)],
     shuffle(list) {
       const a = list.slice();
       for (let i = a.length - 1; i > 0; i--) {
@@ -1009,9 +1009,30 @@ const Profile = (() => {
 const EquationFactory = (() => {
   const SYMBOL = Object.freeze({ mul: '×', div: '÷' });
 
+  const BLANKS = Object.freeze(['a', 'b', 'c']);
+
   function make(op, a, b) {
     const answer = op === 'mul' ? a * b : a / b;
     return { key: `${a}${op === 'mul' ? 'x' : '/'}${b}`, op, a, b, answer };
+  }
+
+  /* The "?" can sit on either operand or on the result; `target` is the value the child must type. */
+  function withBlank(eq, blank = RNG.pick(BLANKS)) {
+    const slot = BLANKS.includes(blank) ? blank : 'c';
+    return { ...eq, blank: slot, target: slot === 'a' ? eq.a : slot === 'b' ? eq.b : eq.answer };
+  }
+
+  function parts(eq) {
+    return [['a', eq.a], ['op', SYMBOL[eq.op]], ['b', eq.b], ['eq', '='], ['c', eq.answer]];
+  }
+
+  function puzzle(eq) {
+    return parts(eq).map(([slot, v]) => (slot === (eq.blank || 'c') ? '?' : v)).join(' ');
+  }
+
+  function spoken(eq) {
+    const say = slot => (slot === (eq.blank || 'c') ? 'what' : slot === 'a' ? eq.a : slot === 'b' ? eq.b : eq.answer);
+    return `${say('a')} ${eq.op === 'mul' ? 'times' : 'divided by'} ${say('b')} equals ${say('c')}`;
   }
 
   /* Level N must appear as a multiplier, as the divisor, or (spec: "Dividend ÷ S = N") as the quotient. */
@@ -1072,21 +1093,26 @@ const EquationFactory = (() => {
     for (let i = 0; i < count; i++) {
       if (reviewAt.has(i)) {
         const r = reviewAt.get(i);
-        run.push({ ...make(r.op, r.a, r.b), isReview: true });
+        run.push({ ...withBlank(make(r.op, r.a, r.b)), isReview: true });
         continue;
       }
       let op = RNG.random() < 0.5 ? 'mul' : 'div';
       const tail = run.slice(-CONFIG.MAX_SAME_OP_IN_A_ROW);
       if (tail.length === CONFIG.MAX_SAME_OP_IN_A_ROW && tail.every(e => e.op === op)) op = other(op);
       const eq = draw(op, false) || draw(other(op), false) || draw(op, true) || draw(other(op), true);
-      run.push({ ...eq, isReview: false });
+      run.push({ ...withBlank(eq), isReview: false });
     }
     return run;
   }
 
   return {
     SYMBOL,
+    BLANKS,
     make,
+    withBlank,
+    parts,
+    puzzle,
+    spoken,
     validate,
     pool,
     buildRun,
@@ -1379,6 +1405,11 @@ class GameSession {
     if (this.input.length >= this.maxDigits) return { ok: false, reason: 'max' };
     this.input += key;
     this.emit('input', this.input);
+    const eq = this.current;
+    if (eq && this.input.length >= Util.digits(eq.target)) {
+      const res = this.submit();
+      return { ...res, ok: true, submitted: true };
+    }
     return { ok: true };
   }
 
@@ -1387,9 +1418,9 @@ class GameSession {
     if (!this.input) return { ok: false, reason: 'empty' };
     const eq = this.current;
     const given = parseInt(this.input, 10);
-    if (given === eq.answer) this.onCorrect(eq, given);
+    if (given === eq.target) this.onCorrect(eq, given);
     else this.onWrong(eq, given);
-    return { ok: true, correct: given === eq.answer };
+    return { ok: true, correct: given === eq.target };
   }
 
   onCorrect(eq, given) {
@@ -2535,7 +2566,6 @@ Screens.settings = () => {
    ===================================================================== */
 const CHEERS = ['Awesome!', 'On fire!', 'Math wizard!', 'Unstoppable!', 'Super brain!', 'Legendary!'];
 const STREAK_CALLOUTS = new Set([3, 5, 10, 15, 20, 25, 30, 35, 40]);
-const RING_CIRCUMFERENCE = 2 * Math.PI * 28;
 
 Screens.play = ({ mode, level }) => {
   const session = new GameSession({ mode, level });
@@ -2551,16 +2581,17 @@ Screens.play = ({ mode, level }) => {
         <button class="icon-btn sm" data-action="exit" aria-label="Leave this run">✖️</button>
         ${isSprint ? '<button class="icon-btn sm" data-action="pause" aria-label="Pause">⏸️</button>' : '<button class="icon-btn sm" data-action="restart" aria-label="Restart this practice" hidden>↻</button>'}
         <div class="play-title display">Level ${level} · ${isSprint ? 'Sprint' : 'Practice'}</div>
+        ${isSprint ? `
+          <div class="timer" data-timer hidden aria-hidden="true">
+            <i class="timer-fill" data-ring></i>
+            <span class="timer-text" data-time>${Util.fmtTime(CONFIG.SPRINT_DURATION_MS)}</span>
+          </div>` : ''}
         ${Wallet.html(true)}
       </header>
       <div class="play-status">
         ${isSprint ? `
-          <div class="timer" data-timer role="timer" aria-label="Time left">
-            <svg viewBox="0 0 64 64" aria-hidden="true"><circle class="ring-bg" cx="32" cy="32" r="28"/><circle class="ring" cx="32" cy="32" r="28" data-ring/></svg>
-            <span class="timer-text" data-time>${Util.fmtTime(CONFIG.SPRINT_DURATION_MS)}</span>
-          </div>
-          <span class="freeze-badge" data-freeze hidden>❄️ <b data-freeze-s>5</b>s</span>
           <span class="eq-count">Equation <b data-qnum>1</b>/${session.total}</span>
+          <span class="freeze-badge" data-freeze hidden>❄️ <b data-freeze-s>5</b>s</span>
           <span class="score-pill" aria-label="Correct answers">✓ <b data-score>0</b></span>
           <div class="progress" aria-hidden="true"><i data-progress></i></div>`
         : `
@@ -2634,7 +2665,10 @@ Screens.play = ({ mode, level }) => {
   }
 
   function renderEquation(eq) {
-    eqEl.innerHTML = `<span class="eq-a">${eq.a}</span><span class="eq-op">${EquationFactory.SYMBOL[eq.op]}</span><span class="eq-b">${eq.b}</span><span class="eq-eq">=</span><span class="answer empty" data-answer><span class="answer-text"></span><span class="caret"></span></span>`;
+    const blank = eq.blank || 'c';
+    eqEl.innerHTML = EquationFactory.parts(eq).map(([slot, v]) => (slot === blank
+      ? '<span class="answer empty" data-answer><span class="answer-text"></span><span class="caret"></span></span>'
+      : `<span class="eq-${slot}">${v}</span>`)).join('');
     answerEl = eqEl.querySelector('[data-answer]');
     answerText = answerEl.querySelector('.answer-text');
     fitEquation();
@@ -2717,7 +2751,7 @@ Screens.play = ({ mode, level }) => {
     promptEl.setAttribute('aria-label', 'Second Chance');
     promptEl.innerHTML = `
       <h3 class="display">Oops! Not quite 🙈</h3>
-      <p class="prompt-eq">${eq.a} ${EquationFactory.SYMBOL[eq.op]} ${eq.b} = ?</p>
+      <p class="prompt-eq">${EquationFactory.puzzle(eq)}</p>
       <p>Use a Second Chance to try again?</p>
       <div class="prompt-actions">
         <button class="btn btn-good" data-prompt="use">🔄 Try again<small>${Util.plural(charges, 'charge', 'charges')} left</small></button>
@@ -2756,6 +2790,7 @@ Screens.play = ({ mode, level }) => {
       }
       return;
     }
+    if (res.submitted) return;
     if (res.ok) AudioEngine.play('tap');
     else if (res.reason === 'leading-zero' || res.reason === 'max') {
       AudioEngine.play('nope');
@@ -2907,7 +2942,7 @@ Screens.play = ({ mode, level }) => {
     updateScore();
     if (eq.isReview) setSub('<span class="badge rematch">🔁 Rematch!</span>');
     else if (!factActive) subEl.innerHTML = '';
-    UI.announce(`Equation ${index + 1}: ${eq.a} ${eq.op === 'mul' ? 'times' : 'divided by'} ${eq.b}`);
+    UI.announce(`Equation ${index + 1}: ${EquationFactory.spoken(eq)}`);
   });
 
   session.on('input', value => renderInput(value));
@@ -2956,7 +2991,7 @@ Screens.play = ({ mode, level }) => {
       if (answerEl) {
         answerEl.classList.remove('bad', 'empty');
         answerEl.classList.add('reveal');
-        answerText.innerHTML = `<span class="struck">${Util.esc(given)}</span>${eq.answer}`;
+        answerText.innerHTML = `<span class="struck">${Util.esc(given)}</span>${eq.target}`;
         fitEquation();
       }
       if (justFailed) {
@@ -2968,12 +3003,12 @@ Screens.play = ({ mode, level }) => {
     }
     updateDots();
     updateScore();
-    UI.announce(`The answer is ${eq.answer}.`);
+    UI.announce(`The answer is ${eq.target}. ${EquationFactory.text(eq)}`);
   });
 
   session.on('tick', t => {
     const frac = Math.min(1, t.remaining / CONFIG.SPRINT_DURATION_MS);
-    ringEl.style.strokeDashoffset = String(RING_CIRCUMFERENCE * (1 - frac));
+    ringEl.style.transform = `scaleX(${frac})`;
     const secs = Math.ceil(t.remaining / 1000);
     if (secs !== lastSecond) {
       timeEl.textContent = Util.fmtTime(t.remaining);
@@ -2997,7 +3032,7 @@ Screens.play = ({ mode, level }) => {
 
   session.on('warp', () => {
     AudioEngine.play('warp');
-    FX.floatText('+10s', timerEl, null);
+    FX.floatText('+10s', card, null);
     if (timerEl) { timerEl.classList.remove('bump'); void timerEl.offsetWidth; timerEl.classList.add('bump'); }
     UI.toast('⏱️ +10 seconds!', { kind: 'good', ms: 1200 });
     UI.announce('10 more seconds!');
