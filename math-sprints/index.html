@@ -637,6 +637,8 @@ const CONFIG = Object.freeze({
   LEVELS: Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9]),
   DEFAULT_RANGE: Object.freeze({ min: 1, max: 25 }),
   RANGE_LIMIT: Object.freeze({ min: 1, max: 99 }),
+  MAX_DIVISOR: 10,
+  PERFECT_LEVEL_BONUS: 20,
   PRACTICE_LENGTH: 10,
   PERFECT_RUNS_TO_UNLOCK: 3,
   REVIEW_SLOTS_PER_SESSION: 6,
@@ -815,7 +817,7 @@ const Profile = (() => {
   let state = null;
   let warned = false;
 
-  const newLevel = () => ({ perfectPractices: 0, practiceRuns: 0, sprintRuns: 0, sprintBest: 0, sprintPerfects: 0, sprintBestTimeMs: null, reviewQueue: [] });
+  const newLevel = () => ({ perfectPractices: 0, practiceRuns: 0, sprintRuns: 0, sprintBest: 0, sprintPerfects: 0, sprintBestTimeMs: null, perfect: false, reviewQueue: [] });
 
   function defaults() {
     const levels = {};
@@ -875,12 +877,21 @@ const Profile = (() => {
       L.sprintRuns = Util.int(src.sprintRuns, 0, 0, 1e6);
       L.sprintBest = Math.min(Util.int(src.sprintBest, 0, 0, CONFIG.SPRINT_LENGTH), L.sprintRuns > 0 ? CONFIG.SPRINT_LENGTH : 0);
       L.sprintPerfects = Math.min(Util.int(src.sprintPerfects, 0, 0, 1e6), L.sprintRuns);
+      L.perfect = Util.bool(src.perfect, false) && L.sprintPerfects > 0 && L.sprintBest === CONFIG.SPRINT_LENGTH;
       L.sprintBestTimeMs = src.sprintBestTimeMs === null || src.sprintBestTimeMs === undefined ? null : Util.int(src.sprintBestTimeMs, null, 0, 36e5);
-      const seen = new Set();
-      L.reviewQueue = (Array.isArray(src.reviewQueue) ? src.reviewQueue : [])
-        .map(item => ReviewQueue.sanitizeItem(item, n))
-        .filter(item => item && !seen.has(item.key) && seen.add(item.key))
-        .slice(0, CONFIG.REVIEW_QUEUE_MAX);
+      const reviews = new Map();
+      (Array.isArray(src.reviewQueue) ? src.reviewQueue : []).forEach(rawItem => {
+        const item = ReviewQueue.sanitizeItem(rawItem, n);
+        if (!item) return;
+        const previous = reviews.get(item.key);
+        if (previous) {
+          previous.misses = Math.min(1e6, previous.misses + item.misses);
+          previous.streak = Math.min(previous.streak, item.streak);
+          previous.addedAt = Math.min(previous.addedAt, item.addedAt);
+          previous.lastSeenAt = Math.max(previous.lastSeenAt, item.lastSeenAt);
+        } else reviews.set(item.key, item);
+      });
+      L.reviewQueue = Array.from(reviews.values()).slice(0, CONFIG.REVIEW_QUEUE_MAX);
     });
     out.createdAt = Util.int(raw.createdAt, out.createdAt, 0, 8.64e15);
     return out;
@@ -974,7 +985,7 @@ const Profile = (() => {
       commit('practice');
       return { perfectPractices: L.perfectPractices, justUnlocked: !wasUnlocked && L.perfectPractices >= CONFIG.PERFECT_RUNS_TO_UNLOCK };
     },
-    recordSprint(n, { score, timeMs, finishedAll }) {
+    recordSprint(n, { score, timeMs, finishedAll, noPowerups = false, timeLeftMs = 0 }) {
       const L = state.levels[n];
       const prevBest = L.sprintBest;
       const firstRun = L.sprintRuns === 0;
@@ -991,8 +1002,16 @@ const Profile = (() => {
           newBestTime = true;
         }
       }
+      const perfectLevel = perfect && finishedAll && noPowerups && timeLeftMs > 0;
+      const justPerfected = perfectLevel && !L.perfect;
+      const bonus = justPerfected ? CONFIG.PERFECT_LEVEL_BONUS : 0;
+      if (justPerfected) {
+        L.perfect = true;
+        state.userPoints += bonus;
+        state.lifetimePoints += bonus;
+      }
       commit('sprint');
-      return { newBest, firstRun, prevBest, perfect, newBestTime };
+      return { newBest, firstRun, prevBest, perfect, newBestTime, perfectLevel, justPerfected, bonus };
     },
     reset() {
       const keepSettings = { sfx: state.settings.sfx, music: state.settings.music, haptics: state.settings.haptics };
@@ -1041,7 +1060,7 @@ const EquationFactory = (() => {
     const { a, b, answer } = eq;
     if (![a, b, answer].every(v => Number.isInteger(v) && v >= 1 && v <= 9999)) return false;
     if (eq.op === 'mul') return a * b === answer && (a === level || b === level);
-    return a % b === 0 && a / b === answer && (b === level || answer === level);
+    return b <= CONFIG.MAX_DIVISOR && a % b === 0 && a / b === answer && (b === level || answer === level);
   }
 
   function pool(level, range) {
@@ -1063,7 +1082,10 @@ const EquationFactory = (() => {
     all.forEach(eq => { if (!exclude.has(eq.key)) fresh[eq.op].push(eq); });
     if (!fresh.mul.length && !fresh.div.length) all.forEach(eq => fresh[eq.op].push(eq));
     const bags = { mul: RNG.shuffle(fresh.mul), div: RNG.shuffle(fresh.div) };
-    const reviewItems = review.slice(0, count);
+    const reviewItems = Array.from(new Map(review
+      .map(item => ReviewQueue.sanitizeItem(item, level))
+      .filter(Boolean)
+      .map(item => [item.key, item])).values()).slice(0, count);
     const reviewAt = new Map();
     RNG.shuffle(Array.from({ length: count }, (_, i) => i))
       .slice(0, reviewItems.length)
@@ -1130,10 +1152,14 @@ const ReviewQueue = {
     const a = Util.int(item.a, NaN);
     const b = Util.int(item.b, NaN);
     if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
-    const eq = EquationFactory.make(item.op, a, b);
+    let eq = EquationFactory.make(item.op, a, b);
+    // Preserve legacy division facts by swapping the divisor with the level-sized quotient.
+    if (eq.op === 'div' && b > CONFIG.MAX_DIVISOR && eq.answer === level) {
+      eq = EquationFactory.make('div', a, level);
+    }
     if (!EquationFactory.validate(eq, level)) return null;
     return {
-      key: eq.key, op: eq.op, a, b, answer: eq.answer,
+      key: eq.key, op: eq.op, a: eq.a, b: eq.b, answer: eq.answer,
       streak: Util.int(item.streak, 0, 0, CONFIG.REVIEW_CLEAR_STREAK - 1),
       misses: Util.int(item.misses, 1, 1, 1e6),
       addedAt: Util.int(item.addedAt, Date.now(), 0, 8.64e15),
@@ -1430,6 +1456,8 @@ class GameSession {
     this.points += CONFIG.POINTS_PER_CORRECT;
     this.results[this.index] = 'ok';
     Profile.earn(CONFIG.POINTS_PER_CORRECT);
+    // The last answer completes the sprint; feedback animation must not consume its spare time.
+    if (this.isSprint && this.index === this.total - 1 && this.timer.remaining > 0) this.timer.stop();
     let review = null;
     if (!this.isSprint) {
       review = ReviewQueue.record(this.level, eq, true, eq.isReview && !this.retrying);
@@ -1569,7 +1597,12 @@ class GameSession {
     };
     if (this.isSprint) {
       const finishedAll = reason === 'complete';
-      const record = Profile.recordSprint(this.level, { score: this.correct, timeMs: this.timer.consumed, finishedAll });
+      const record = Profile.recordSprint(this.level, {
+        score: this.correct, timeMs: this.timer.consumed, finishedAll,
+        noPowerups: Object.values(this.used).every(count => count === 0),
+        timeLeftMs: this.timer.remaining,
+      });
+      summary.points += record.bonus;
       Object.assign(summary, { finishedAll, timeUsedMs: this.timer.consumed, timeLeftMs: this.timer.remaining, record });
     } else {
       const perfect = reason === 'complete' && !this.failed && this.correct === this.total;
@@ -2162,7 +2195,7 @@ function levelCardHTML(n) {
   if (!unlocked) sprint = '<span class="lc-sprint locked">🔒 Sprint</span>';
   else if (L.sprintRuns === 0) sprint = '<span class="lc-sprint ready">🏁 Sprint!</span>';
   else sprint = `<span class="lc-sprint best">🏆 ${L.sprintBest}/${CONFIG.SPRINT_LENGTH}</span><span class="lc-runs">${Util.plural(L.sprintRuns, 'run', 'runs')}</span>`;
-  const label = `Level ${n}. Practice: ${unlocked ? 'complete' : `${done} of ${CONFIG.PERFECT_RUNS_TO_UNLOCK} perfect runs`}. Final Sprint ${unlocked ? (L.sprintRuns ? `best score ${L.sprintBest} of ${CONFIG.SPRINT_LENGTH}, ${Util.plural(L.sprintRuns, 'run', 'runs')}` : 'unlocked') : 'locked'}.${rq ? ` ${Util.plural(rq, 'rematch', 'rematches')} waiting.` : ''}`;
+  const label = `Level ${n}.${L.perfect ? ' Perfect.' : ''} Practice: ${unlocked ? 'complete' : `${done} of ${CONFIG.PERFECT_RUNS_TO_UNLOCK} perfect runs`}. Final Sprint ${unlocked ? (L.sprintRuns ? `best score ${L.sprintBest} of ${CONFIG.SPRINT_LENGTH}, ${Util.plural(L.sprintRuns, 'run', 'runs')}` : 'unlocked') : 'locked'}.${rq ? ` ${Util.plural(rq, 'rematch', 'rematches')} waiting.` : ''}`;
   return `<li><button class="level-card panel${mastered ? ' mastered' : ''}" data-level="${n}" aria-label="${Util.esc(label)}">
     ${mastered ? '<span class="lc-crown" aria-hidden="true">👑</span>' : ''}
     ${rq ? `<span class="lc-review" aria-hidden="true">🔁${rq}</span>` : ''}
@@ -2170,6 +2203,7 @@ function levelCardHTML(n) {
     <span class="pips lc-pips" aria-hidden="true">${pipsHTML(done)}</span>
     <span class="lc-label" aria-hidden="true">Practice:</span>
     <span class="lc-value" aria-hidden="true">${unlocked ? 'Complete ✅' : `${done}/${CONFIG.PERFECT_RUNS_TO_UNLOCK}`}</span>
+    ${L.perfect ? '<span class="badge ready" data-perfect-badge>Perfect</span>' : ''}
     <span class="lc-foot" aria-hidden="true">${sprint}</span>
   </button></li>`;
 }
@@ -2187,10 +2221,11 @@ function openLevelSheet(n) {
       <div><h2 class="display">Level ${n}</h2><p class="sheet-sub">Multiply and divide with ${n}</p></div>
     </div>
     <ul class="sheet-stats">
+      ${L.perfect ? '<li><span class="badge ready" data-perfect-badge>Perfect</span><b>40/40 without power-ups</b></li>' : ''}
       <li><span>Perfect practices</span><b><span class="pips" aria-hidden="true">${pipsHTML(done)}</span> ${unlocked ? 'Complete ✅' : `${done}/${CONFIG.PERFECT_RUNS_TO_UNLOCK}`}</b></li>
       ${rq ? `<li><span>🔁 Rematches waiting</span><b>${rq}</b></li>` : ''}
       ${L.sprintRuns ? `<li><span>🏆 Best sprint</span><b>${L.sprintBest}/${CONFIG.SPRINT_LENGTH} · ${Util.plural(L.sprintRuns, 'run', 'runs')}</b></li>` : ''}
-      ${L.sprintPerfects ? `<li><span>👑 Perfect sprints</span><b>${L.sprintPerfects}${L.sprintBestTimeMs !== null ? ` · fastest ${Util.fmtSecs(L.sprintBestTimeMs)}` : ''}</b></li>` : ''}
+      ${L.sprintPerfects ? `<li><span>👑 40/40 sprints</span><b>${L.sprintPerfects}${L.sprintBestTimeMs !== null ? ` · fastest ${Util.fmtSecs(L.sprintBestTimeMs)}` : ''}</b></li>` : ''}
     </ul>
     <div class="sheet-actions">
       <button class="btn btn-big btn-good" data-go="practice" data-autofocus>▶ Practice<small>${CONFIG.PRACTICE_LENGTH} questions · no timer · aim for 10/10</small></button>
@@ -2236,6 +2271,7 @@ Screens.hub = () => {
         <button class="icon-btn hold-btn" data-hold="settings" aria-label="Grown-ups settings (press and hold)"><span aria-hidden="true">⚙️</span><svg class="hold-ring" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="23"/></svg></button>
       </nav>
       <p class="hub-tag">Pick your times table, champ!</p>
+      <p class="hub-tag" data-perfect-progress>Perfect ${CONFIG.LEVELS.filter(n => s.levels[n].perfect).length}/${CONFIG.LEVELS.length} · Get 40/40 before time runs out without power-ups. +${CONFIG.PERFECT_LEVEL_BONUS} stars the first time!</p>
       <ol class="level-grid" aria-label="Levels">${CONFIG.LEVELS.map(levelCardHTML).join('')}</ol>
       ${Store.healthy ? '' : '<p class="notice">⚠️ This browser is not saving progress (private mode?). Stars will vanish when the page closes.</p>'}
       <p class="hub-foot">Score 10/10 in 3 practices to unlock each Final Sprint ⚡</p>`;
@@ -2431,7 +2467,7 @@ Screens.settings = () => {
       <div class="settings-list">
         <section class="set-card panel" aria-labelledby="set-range">
           <h2 id="set-range" class="display">Number range</h2>
-          <p>The second number in every equation is picked from this range (default 1–25). Zero is never used.</p>
+          <p>The secondary multiplication factor and division quotient use this range (default 1–25). The divisor (the number after ÷) is never bigger than ${CONFIG.MAX_DIVISOR}. Zero is never used.</p>
           <div class="stepper"><label id="lbl-min">From</label><button class="icon-btn" data-step="min:-1" aria-label="Lower the smallest number">➖</button><output aria-labelledby="lbl-min" data-out="min" aria-live="polite">${range.min}</output><button class="icon-btn" data-step="min:1" aria-label="Raise the smallest number">➕</button></div>
           <div class="stepper"><label id="lbl-max">To</label><button class="icon-btn" data-step="max:-1" aria-label="Lower the biggest number">➖</button><output aria-labelledby="lbl-max" data-out="max" aria-live="polite">${range.max}</output><button class="icon-btn" data-step="max:1" aria-label="Raise the biggest number">➕</button></div>
           <p data-range-note>${rangeNote()}</p>
@@ -3152,7 +3188,9 @@ Screens.results = ({ summary }) => {
       <span>⏱️ ${Util.fmtTime(s.timeUsedMs)} used</span>
       ${s.finishedAll ? `<span>⚡ ${Util.fmtTime(s.timeLeftMs)} to spare</span>` : `<span>📝 ${s.answered}/${s.total} answered</span>`}
       ${s.bestStreak >= 3 ? `<span>🔥 Best streak ${s.bestStreak}</span>` : ''}
-      ${s.record.newBestTime ? '<span>🚀 Fastest perfect sprint!</span>' : ''}
+      ${s.record.newBestTime ? '<span>🚀 Fastest 40/40 sprint!</span>' : ''}
+      ${L.perfect ? '<span class="badge ready" data-perfect-badge>Perfect level</span>' : ''}
+      ${s.record.bonus ? `<span>+${s.record.bonus} stars for your first Perfect!</span>` : ''}
     </div>`;
     actions = `<button class="btn btn-big btn-good" data-go="sprint" data-autofocus>⚡ Sprint again</button>
       <button class="btn btn-alt" data-go="practice">▶ Practice</button><button class="btn" data-go="hub">🏠 Levels</button>`;
