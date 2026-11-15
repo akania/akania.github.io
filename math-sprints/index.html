@@ -840,14 +840,14 @@ const Profile = (() => {
     };
   }
 
-  function sanitizeRange(r) {
+  function sanitizeRange(r, minimumSize = CONFIG.MIN_RANGE_SIZE) {
     const lim = CONFIG.RANGE_LIMIT;
     let min = Util.int(r && r.min, CONFIG.DEFAULT_RANGE.min, lim.min, lim.max);
     let max = Util.int(r && r.max, CONFIG.DEFAULT_RANGE.max, lim.min, lim.max);
     if (min > max) [min, max] = [max, min];
-    if (max - min + 1 < CONFIG.MIN_RANGE_SIZE) {
-      max = Math.min(lim.max, min + CONFIG.MIN_RANGE_SIZE - 1);
-      min = Math.min(min, max - CONFIG.MIN_RANGE_SIZE + 1);
+    if (max - min + 1 < minimumSize) {
+      max = Math.min(lim.max, min + minimumSize - 1);
+      min = Math.min(min, max - minimumSize + 1);
     }
     return { min, max };
   }
@@ -924,7 +924,7 @@ const Profile = (() => {
       .map(entry => ({
         streak: Util.int(entry.streak, 0, 0, 1e6),
         at: Util.int(entry.at, 0, 0, 8.64e15),
-        range: sanitizeRange(entry.range),
+        range: sanitizeRange(entry.range, 1),
       }))
       .sort((a, b) => b.streak - a.streak || a.at - b.at)
       .slice(0, CONFIG.MASTER_LEADERBOARD_MAX);
