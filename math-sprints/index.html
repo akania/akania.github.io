@@ -637,6 +637,7 @@ const CONFIG = Object.freeze({
   LEVELS: Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9]),
   DEFAULT_RANGE: Object.freeze({ min: 1, max: 25 }),
   RANGE_LIMIT: Object.freeze({ min: 1, max: 99 }),
+  MIN_RANGE_SIZE: 10,
   MAX_DIVISOR: 10,
   PERFECT_LEVEL_BONUS: 20,
   PRACTICE_LENGTH: 10,
@@ -844,6 +845,10 @@ const Profile = (() => {
     let min = Util.int(r && r.min, CONFIG.DEFAULT_RANGE.min, lim.min, lim.max);
     let max = Util.int(r && r.max, CONFIG.DEFAULT_RANGE.max, lim.min, lim.max);
     if (min > max) [min, max] = [max, min];
+    if (max - min + 1 < CONFIG.MIN_RANGE_SIZE) {
+      max = Math.min(lim.max, min + CONFIG.MIN_RANGE_SIZE - 1);
+      min = Math.min(min, max - CONFIG.MIN_RANGE_SIZE + 1);
+    }
     return { min, max };
   }
 
@@ -2717,7 +2722,7 @@ Screens.settings = () => {
       <div class="settings-list">
         <section class="set-card panel" aria-labelledby="set-range">
           <h2 id="set-range" class="display">Number range</h2>
-          <p>The secondary multiplication factor and division quotient use this range (default 1–25). The divisor (the number after ÷) is never bigger than ${CONFIG.MAX_DIVISOR}. Zero is never used.</p>
+          <p>The secondary multiplication factor and division quotient use this range (default 1–25). Keep at least ${CONFIG.MIN_RANGE_SIZE} numbers in the range for varied questions. The divisor (the number after ÷) is never bigger than ${CONFIG.MAX_DIVISOR}. Zero is never used.</p>
           <div class="stepper"><label id="lbl-min">From</label><button class="icon-btn" data-step="min:-1" aria-label="Lower the smallest number">➖</button><output aria-labelledby="lbl-min" data-out="min" aria-live="polite">${range.min}</output><button class="icon-btn" data-step="min:1" aria-label="Raise the smallest number">➕</button></div>
           <div class="stepper"><label id="lbl-max">To</label><button class="icon-btn" data-step="max:-1" aria-label="Lower the biggest number">➖</button><output aria-labelledby="lbl-max" data-out="max" aria-live="polite">${range.max}</output><button class="icon-btn" data-step="max:1" aria-label="Raise the biggest number">➕</button></div>
           <p data-range-note>${rangeNote()}</p>
@@ -2770,7 +2775,7 @@ Screens.settings = () => {
     let { min, max } = range;
     if (which === 'min') min += Number(d); else max += Number(d);
     const lim = CONFIG.RANGE_LIMIT;
-    if (min < lim.min || max > lim.max || min > max) {
+    if (min < lim.min || max > lim.max || max - min + 1 < CONFIG.MIN_RANGE_SIZE) {
       AudioEngine.play('nope');
       clearRepeat();
       return;
