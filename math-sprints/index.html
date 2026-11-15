@@ -1035,9 +1035,14 @@ const EquationFactory = (() => {
     return { key: `${a}${op === 'mul' ? 'x' : '/'}${b}`, op, a, b, answer };
   }
 
-  /* The "?" can sit on either operand or on the result; `target` is the value the child must type. */
-  function withBlank(eq, blank = RNG.pick(BLANKS)) {
-    const slot = BLANKS.includes(blank) ? blank : 'c';
+  /* Leave a focus multiplier, divisor or quotient visible, even when both factors equal the level. */
+  function withBlank(eq, blank, level) {
+    const focus = eq.op === 'mul'
+      ? ['a', 'b'].filter(slot => eq[slot] === level)
+      : [eq.b === level ? 'b' : null, eq.answer === level ? 'c' : null].filter(Boolean);
+    const allowed = BLANKS.filter(slot => !focus.length || focus.some(visible => visible !== slot));
+    if (!allowed.length) allowed.push('c');
+    const slot = allowed.includes(blank) ? blank : RNG.pick(allowed);
     return { ...eq, blank: slot, target: slot === 'a' ? eq.a : slot === 'b' ? eq.b : eq.answer };
   }
 
@@ -1115,14 +1120,14 @@ const EquationFactory = (() => {
     for (let i = 0; i < count; i++) {
       if (reviewAt.has(i)) {
         const r = reviewAt.get(i);
-        run.push({ ...withBlank(make(r.op, r.a, r.b)), isReview: true });
+        run.push({ ...withBlank(make(r.op, r.a, r.b), undefined, level), isReview: true });
         continue;
       }
       let op = RNG.random() < 0.5 ? 'mul' : 'div';
       const tail = run.slice(-CONFIG.MAX_SAME_OP_IN_A_ROW);
       if (tail.length === CONFIG.MAX_SAME_OP_IN_A_ROW && tail.every(e => e.op === op)) op = other(op);
       const eq = draw(op, false) || draw(other(op), false) || draw(op, true) || draw(other(op), true);
-      run.push({ ...withBlank(eq), isReview: false });
+      run.push({ ...withBlank(eq, undefined, level), isReview: false });
     }
     return run;
   }
