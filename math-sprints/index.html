@@ -644,6 +644,8 @@ const CONFIG = Object.freeze({
   REVIEW_SLOTS_PER_SESSION: 6,
   REVIEW_CLEAR_STREAK: 2,
   REVIEW_QUEUE_MAX: 60,
+  LEARNING_STREAK: 3,
+  MASTER_LEADERBOARD_MAX: 10,
   SPRINT_LENGTH: 40,
   SPRINT_DURATION_MS: 120000,
   TIME_WARP_MS: 10000,
@@ -817,7 +819,7 @@ const Profile = (() => {
   let state = null;
   let warned = false;
 
-  const newLevel = () => ({ perfectPractices: 0, practiceRuns: 0, sprintRuns: 0, sprintBest: 0, sprintPerfects: 0, sprintBestTimeMs: null, perfect: false, reviewQueue: [] });
+  const newLevel = () => ({ perfectPractices: 0, practiceRuns: 0, sprintRuns: 0, sprintBest: 0, sprintPerfects: 0, sprintBestTimeMs: null, perfect: false, reviewQueue: [], learning: {}, learningRun: 0 });
 
   function defaults() {
     const levels = {};
@@ -831,6 +833,7 @@ const Profile = (() => {
       inventory: Object.fromEntries(POWERUPS.map(p => [p.id, 0])),
       settings: { sfx: true, music: false, haptics: true, range: { min: CONFIG.DEFAULT_RANGE.min, max: CONFIG.DEFAULT_RANGE.max } },
       levels,
+      master: { best: 0, runs: 0, leaderboard: [] },
       createdAt: now,
       updatedAt: now,
     };
@@ -892,7 +895,36 @@ const Profile = (() => {
         } else reviews.set(item.key, item);
       });
       L.reviewQueue = Array.from(reviews.values()).slice(0, CONFIG.REVIEW_QUEUE_MAX);
+      L.learningRun = Util.int(src.learningRun, 0, 0, 1e9);
+      const learning = src.learning && typeof src.learning === 'object' && !Array.isArray(src.learning) ? src.learning : {};
+      Object.entries(learning).forEach(([family, evidence]) => {
+        const secondary = Number(family);
+        if (String(secondary) === family && Number.isInteger(secondary) && secondary >= 1
+          && n * secondary <= 9999 && evidence && typeof evidence === 'object') {
+          L.learning[family] = Learning.sanitize(evidence, L.learningRun);
+        }
+      });
+      const legacyFamilies = new Map();
+      L.reviewQueue.forEach(item => {
+        const family = Learning.family(item, n);
+        legacyFamilies.set(family, Math.min(1e6, (legacyFamilies.get(family) || 0) + item.misses));
+      });
+      legacyFamilies.forEach((misses, family) => {
+        if (!L.learning[family]) L.learning[family] = Learning.sanitize({ misses });
+      });
     });
+    const master = raw.master && typeof raw.master === 'object' ? raw.master : {};
+    out.master.leaderboard = (Array.isArray(master.leaderboard) ? master.leaderboard : [])
+      .filter(entry => entry && typeof entry === 'object' && Number.isInteger(entry.streak) && entry.streak >= 0)
+      .map(entry => ({
+        streak: Util.int(entry.streak, 0, 0, 1e6),
+        at: Util.int(entry.at, 0, 0, 8.64e15),
+        range: sanitizeRange(entry.range),
+      }))
+      .sort((a, b) => b.streak - a.streak || a.at - b.at)
+      .slice(0, CONFIG.MASTER_LEADERBOARD_MAX);
+    out.master.best = Math.max(Util.int(master.best, 0, 0, 1e6), ...out.master.leaderboard.map(entry => entry.streak));
+    out.master.runs = Math.max(Util.int(master.runs, 0, 0, 1e9), out.master.leaderboard.length);
     out.createdAt = Util.int(raw.createdAt, out.createdAt, 0, 8.64e15);
     return out;
   }
@@ -977,6 +1009,22 @@ const Profile = (() => {
       commit('settings');
       return Profile.range;
     },
+    beginPractice(n) {
+      state.levels[n].learningRun += 1;
+      commit('practice-start');
+      return state.levels[n].learningRun;
+    },
+    recordMaster(streak, range) {
+      const master = state.master;
+      const previous = master.best;
+      master.best = Math.max(previous, streak);
+      master.runs += 1;
+      master.leaderboard.push({ streak, at: Date.now(), range: { ...range } });
+      master.leaderboard.sort((a, b) => b.streak - a.streak || a.at - b.at);
+      master.leaderboard.length = Math.min(master.leaderboard.length, CONFIG.MASTER_LEADERBOARD_MAX);
+      commit('master');
+      return { newBest: streak > previous, best: master.best };
+    },
     recordPractice(n, perfect) {
       const L = state.levels[n];
       const wasUnlocked = L.perfectPractices >= CONFIG.PERFECT_RUNS_TO_UNLOCK;
@@ -1036,12 +1084,15 @@ const EquationFactory = (() => {
   }
 
   /* Leave a focus multiplier, divisor or quotient visible, even when both factors equal the level. */
-  function withBlank(eq, blank, level) {
+  function allowedBlanks(eq, level) {
     const focus = eq.op === 'mul'
       ? ['a', 'b'].filter(slot => eq[slot] === level)
       : [eq.b === level ? 'b' : null, eq.answer === level ? 'c' : null].filter(Boolean);
-    const allowed = BLANKS.filter(slot => !focus.length || focus.some(visible => visible !== slot));
-    if (!allowed.length) allowed.push('c');
+    return BLANKS.filter(slot => !focus.length || focus.some(visible => visible !== slot));
+  }
+
+  function withBlank(eq, blank, level) {
+    const allowed = allowedBlanks(eq, level);
     const slot = allowed.includes(blank) ? blank : RNG.pick(allowed);
     return { ...eq, blank: slot, target: slot === 'a' ? eq.a : slot === 'b' ? eq.b : eq.answer };
   }
@@ -1132,21 +1183,141 @@ const EquationFactory = (() => {
     return run;
   }
 
+  function weightedFact(candidates, level, weight = () => 1) {
+    const families = new Map();
+    candidates.forEach(eq => {
+      const key = Learning.family(eq, level);
+      if (!families.has(key)) families.set(key, []);
+      families.get(key).push(eq);
+    });
+    const entries = Array.from(families.values());
+    let ticket = RNG.random() * entries.reduce((sum, facts) => sum + weight(facts[0]), 0);
+    for (const facts of entries) {
+      ticket -= weight(facts[0]);
+      if (ticket < 0) return RNG.pick(facts);
+    }
+    return RNG.pick(entries[entries.length - 1]);
+  }
+
+  function buildPractice(level, range) {
+    const all = pool(level, range);
+    const reviews = ReviewQueue.select(level);
+    const exclude = ReviewQueue.keys(level);
+    const used = new Set();
+    // Ten questions: five of each operation, with 3/3/4 blanks across a/b/c.
+    const roles = { mul: ['a', 'b', 'b', 'b', 'c'], div: ['a', 'a', 'c', 'c', 'c'] };
+    if (all.some(eq => eq.op === 'div' && allowedBlanks(eq, level).includes('b'))) {
+      roles.mul[3] = 'c';
+      roles.div[2] = 'b';
+    }
+    const slots = RNG.shuffle(Object.entries(roles).flatMap(([op, blanks]) => blanks.map(blank => ({ op, blank }))));
+    const supports = (eq, slot) => eq.op === slot.op && allowedBlanks(eq, level).includes(slot.blank);
+    reviews.forEach(review => {
+      const family = Learning.family(review, level);
+      const variants = pool(level, { min: Number(family), max: Number(family) });
+      let options = slots.filter(slot => !slot.eq && variants.some(eq => supports(eq, slot) && !used.has(eq.key)));
+      if (!options.length) options = slots.filter(slot => !slot.eq && variants.some(eq => supports(eq, slot)));
+      if (!options.length) throw new Error(`Cannot schedule review fact ${review.key} with the required practice mix`);
+      const slot = RNG.pick(options);
+      const available = variants.filter(eq => supports(eq, slot));
+      slot.eq = RNG.pick(available.filter(eq => !used.has(eq.key)).length
+        ? available.filter(eq => !used.has(eq.key)) : available);
+      slot.reviewKey = review.key;
+      used.add(slot.eq.key);
+    });
+    slots.filter(slot => !slot.eq).forEach(slot => {
+      const available = all.filter(eq => supports(eq, slot));
+      const fresh = available.filter(eq => !used.has(eq.key) && !exclude.has(eq.key));
+      const unused = available.filter(eq => !used.has(eq.key));
+      slot.eq = weightedFact(fresh.length ? fresh : unused.length ? unused : available, level,
+        eq => Learning.weight(level, eq));
+      used.add(slot.eq.key);
+    });
+    const groups = {
+      mul: RNG.shuffle(slots.filter(slot => slot.op === 'mul')),
+      div: RNG.shuffle(slots.filter(slot => slot.op === 'div')),
+    };
+    const run = [];
+    while (groups.mul.length || groups.div.length) {
+      let op = groups.mul.length === groups.div.length ? RNG.pick(['mul', 'div'])
+        : groups.mul.length > groups.div.length ? 'mul' : 'div';
+      if (run.length >= 2 && run.slice(-2).every(eq => eq.op === op)) op = op === 'mul' ? 'div' : 'mul';
+      const slot = groups[op].pop();
+      run.push({ ...withBlank(slot.eq, slot.blank, level), isReview: !!slot.reviewKey, reviewKey: slot.reviewKey });
+    }
+    return run;
+  }
+
+  function buildMaster(range, previousOp) {
+    const levels = RNG.shuffle(CONFIG.LEVELS);
+    let op = previousOp === 'mul' ? 'div' : 'mul';
+    return levels.map(level => {
+      const eq = weightedFact(pool(level, range).filter(eq => eq.op === op), level);
+      op = op === 'mul' ? 'div' : 'mul';
+      return { ...withBlank(eq, undefined, level), level, isReview: false };
+    });
+  }
+
   return {
     SYMBOL,
     BLANKS,
     make,
     withBlank,
+    allowedBlanks,
     parts,
     puzzle,
     spoken,
     validate,
     pool,
     buildRun,
+    buildPractice,
+    buildMaster,
+    weightedFact,
     maxDigits: range => Util.digits(9 * range.max),
     text: eq => `${eq.a} ${SYMBOL[eq.op]} ${eq.b} = ${eq.answer}`,
   };
 })();
+
+const Learning = {
+  family(eq, level) {
+    return String(eq.op === 'mul' ? (eq.a === level ? eq.b : eq.a)
+      : eq.b === level ? eq.answer : eq.b);
+  },
+  sanitize(raw, run = 0) {
+    return {
+      streak: Util.int(raw.streak, 0, 0, CONFIG.LEARNING_STREAK),
+      variants: Array.from(new Set(Array.isArray(raw.variants) ? raw.variants.filter(v => /^(mul|div):[abc]$/.test(v)) : [])),
+      misses: Util.int(raw.misses, 0, 0, 1e6),
+      lastRun: Util.int(raw.lastRun, 0, 0, run),
+      lastSeenAt: Util.int(raw.lastSeenAt, 0, 0, 8.64e15),
+    };
+  },
+  mastered(item) { return item.streak >= CONFIG.LEARNING_STREAK && item.variants.length >= 2; },
+  weight(level, eq) {
+    const item = Profile.level(level).learning[this.family(eq, level)];
+    if (!item) return 1;
+    if (this.mastered(item)) return 0.2;
+    return (item.misses ? 2 + Math.min(item.misses, 3) : 1) / (1 + item.streak);
+  },
+  record(level, eq, correct, run) {
+    const learning = Profile.level(level).learning;
+    const key = this.family(eq, level);
+    const item = learning[key] || (learning[key] = this.sanitize({}));
+    item.lastSeenAt = Date.now();
+    if (!correct) {
+      item.streak = 0;
+      item.variants = [];
+      item.misses = Math.min(item.misses + 1, 1e6);
+      item.lastRun = run;
+    } else {
+      if (item.lastRun !== run) item.streak = Math.min(item.streak + 1, CONFIG.LEARNING_STREAK);
+      item.lastRun = run;
+      const variant = `${eq.op}:${eq.blank}`;
+      if (!item.variants.includes(variant)) item.variants.push(variant);
+    }
+    Profile.commit('learning');
+  },
+};
 
 /* =====================================================================
    6. REVIEW QUEUE — targeted spaced repetition (per level, persistent)
@@ -1181,7 +1352,7 @@ const ReviewQueue = {
   /* correct + countsForStreak → streak++, cleared at REVIEW_CLEAR_STREAK; wrong → logged / streak reset. */
   record(level, eq, correct, countsForStreak) {
     const q = this.queue(level);
-    const idx = q.findIndex(i => i.key === eq.key);
+    const idx = q.findIndex(i => i.key === (eq.reviewKey || eq.key));
     const now = Date.now();
     const result = { logged: false, cleared: false, streak: 0 };
     if (!correct) {
@@ -1329,11 +1500,12 @@ class GameSession {
     this.mode = mode;
     this.level = level;
     this.range = Profile.range;
-    this.total = mode === 'practice' ? CONFIG.PRACTICE_LENGTH : CONFIG.SPRINT_LENGTH;
+    this.total = mode === 'master' ? Infinity : mode === 'practice' ? CONFIG.PRACTICE_LENGTH : CONFIG.SPRINT_LENGTH;
     this.maxDigits = EquationFactory.maxDigits(this.range);
-    const review = mode === 'practice' ? ReviewQueue.select(level) : [];
-    const exclude = mode === 'practice' ? ReviewQueue.keys(level) : new Set();
-    this.queue = EquationFactory.buildRun(level, this.total, this.range, { review, exclude });
+    this.learningRun = mode === 'practice' ? Profile.beginPractice(level) : 0;
+    this.queue = mode === 'master' ? EquationFactory.buildMaster(this.range)
+      : mode === 'practice' ? EquationFactory.buildPractice(level, this.range)
+      : EquationFactory.buildRun(level, this.total, this.range);
     this.reviewCount = this.queue.filter(e => e.isReview).length;
     this.index = 0;
     this.input = '';
@@ -1370,8 +1542,9 @@ class GameSession {
       try { fn(data, this); } catch (err) { console.error('[MathSprints] session', evt, err); }
     });
   }
-  get current() { return this.queue[this.index] || null; }
+  get current() { return this.queue[this.isMaster ? this.index % CONFIG.LEVELS.length : this.index] || null; }
   get isSprint() { return this.mode === 'sprint'; }
+  get isMaster() { return this.mode === 'master'; }
   get finished() { return this.phase === 'finished'; }
 
   after(ms, fn) {
@@ -1458,25 +1631,31 @@ class GameSession {
     this.correct += 1;
     this.streak += 1;
     this.bestStreak = Math.max(this.bestStreak, this.streak);
-    this.points += CONFIG.POINTS_PER_CORRECT;
-    this.results[this.index] = 'ok';
-    Profile.earn(CONFIG.POINTS_PER_CORRECT);
+    if (!this.isMaster) {
+      this.points += CONFIG.POINTS_PER_CORRECT;
+      this.results[this.index] = 'ok';
+      Profile.earn(CONFIG.POINTS_PER_CORRECT);
+    }
     // The last answer completes the sprint; feedback animation must not consume its spare time.
     if (this.isSprint && this.index === this.total - 1 && this.timer.remaining > 0) this.timer.stop();
     let review = null;
-    if (!this.isSprint) {
+    if (this.mode === 'practice') {
+      if (!this.retrying) Learning.record(this.level, eq, true, this.learningRun);
       review = ReviewQueue.record(this.level, eq, true, eq.isReview && !this.retrying);
       if (review.cleared) this.reviewCleared += 1;
     }
     this.setPhase('feedback');
     this.emit('correct', { eq, given, streak: this.streak, review, retried: this.retrying });
-    this.after(CONFIG.FEEDBACK_MS[this.mode], () => this.advance());
+    this.after(CONFIG.FEEDBACK_MS[this.isMaster ? 'practice' : this.mode], () => this.advance());
   }
 
   onWrong(eq, given) {
     this.streak = 0;
-    if (!this.isSprint) ReviewQueue.record(this.level, eq, false, false);
-    const canRedo = Profile.count('secondChance') > 0 && (this.isSprint || !this.failed);
+    if (this.mode === 'practice') {
+      Learning.record(this.level, eq, false, this.learningRun);
+      ReviewQueue.record(this.level, eq, false, false);
+    }
+    const canRedo = !this.isMaster && Profile.count('secondChance') > 0 && (this.isSprint || !this.failed);
     if (canRedo) {
       this.pending = { eq, given };
       this.setPhase('prompt');
@@ -1515,19 +1694,23 @@ class GameSession {
 
   commitMistake(eq, given) {
     this.wrong += 1;
-    this.results[this.index] = 'bad';
+    if (!this.isMaster) this.results[this.index] = 'bad';
     if (!this.missed.some(m => m.eq.key === eq.key)) this.missed.push({ eq, given });
     let justFailed = false;
-    if (!this.isSprint && !this.failed) { this.failed = true; justFailed = true; }
+    if (this.mode === 'practice' && !this.failed) { this.failed = true; justFailed = true; }
     this.setPhase('reveal');
     this.emit('reveal', { eq, given, justFailed });
-    if (this.isSprint) this.advance();
+    if (this.isMaster) this.finish('mistake');
+    else if (this.isSprint) this.advance();
     else this.after(CONFIG.PRACTICE_REVEAL_MS, () => this.advance());
   }
 
   advance() {
     if (this.phase === 'finished') return;
     this.index += 1;
+    if (this.isMaster && this.index % CONFIG.LEVELS.length === 0) {
+      this.queue = EquationFactory.buildMaster(this.range, this.queue[this.queue.length - 1].op);
+    }
     if (this.index >= this.total) { this.finish('complete'); return; }
     this.ask();
   }
@@ -1600,7 +1783,9 @@ class GameSession {
       points: this.points, missed: this.missed.slice(), bestStreak: this.bestStreak,
       used: { ...this.used }, reviewCount: this.reviewCount, reviewCleared: this.reviewCleared,
     };
-    if (this.isSprint) {
+    if (this.isMaster) {
+      summary.record = Profile.recordMaster(this.bestStreak, this.range);
+    } else if (this.isSprint) {
       const finishedAll = reason === 'complete';
       const record = Profile.recordSprint(this.level, {
         score: this.correct, timeMs: this.timer.consumed, finishedAll,
@@ -2227,6 +2412,7 @@ function openLevelSheet(n) {
     </div>
     <ul class="sheet-stats">
       ${L.perfect ? '<li><span class="badge ready" data-perfect-badge>Perfect</span><b>40/40 without power-ups</b></li>' : ''}
+      <li><span>Fact families learned</span><b>${Object.values(L.learning).filter(item => Learning.mastered(item)).length}</b></li>
       <li><span>Perfect practices</span><b><span class="pips" aria-hidden="true">${pipsHTML(done)}</span> ${unlocked ? 'Complete ✅' : `${done}/${CONFIG.PERFECT_RUNS_TO_UNLOCK}`}</b></li>
       ${rq ? `<li><span>🔁 Rematches waiting</span><b>${rq}</b></li>` : ''}
       ${L.sprintRuns ? `<li><span>🏆 Best sprint</span><b>${L.sprintBest}/${CONFIG.SPRINT_LENGTH} · ${Util.plural(L.sprintRuns, 'run', 'runs')}</b></li>` : ''}
@@ -2278,6 +2464,13 @@ Screens.hub = () => {
       <p class="hub-tag">Pick your times table, champ!</p>
       <p class="hub-tag" data-perfect-progress>Perfect ${CONFIG.LEVELS.filter(n => s.levels[n].perfect).length}/${CONFIG.LEVELS.length} · Get 40/40 before time runs out without power-ups. +${CONFIG.PERFECT_LEVEL_BONUS} stars the first time!</p>
       <ol class="level-grid" aria-label="Levels">${CONFIG.LEVELS.map(levelCardHTML).join('')}</ol>
+      <section class="panel" style="margin-top:18px;padding:16px" aria-label="Master level">
+        <h2 class="display">Master · longest streak</h2>
+        <p>Mix all nine tables. The first mistake ends the run. No timer, stars or power-ups.</p>
+        <p data-master-best>Best streak: ${s.master.best}</p>
+        <button class="btn btn-good" data-action="master">Play Master</button>
+        <button class="btn" data-action="leaderboard">Local leaderboard</button>
+      </section>
       ${Store.healthy ? '' : '<p class="notice">⚠️ This browser is not saving progress (private mode?). Stars will vanish when the page closes.</p>'}
       <p class="hub-foot">Score 10/10 in 3 practices to unlock each Final Sprint ⚡</p>`;
     el.scrollTop = scroll;
@@ -2292,6 +2485,8 @@ Screens.hub = () => {
     if (t.dataset.level) { openLevelSheet(Number(t.dataset.level)); return; }
     const action = t.dataset.action;
     if (action === 'shop') App.go('shop');
+    else if (action === 'master') App.go('play', { mode: 'master' });
+    else if (action === 'leaderboard') App.go('leaderboard');
     else if (action === 'music') {
       const on = !Profile.state.settings.music;
       Profile.setSetting('music', on);
@@ -2314,6 +2509,56 @@ Screens.hub = () => {
     },
     destroy() { if (off) off(); },
     onBack: () => false,
+  };
+};
+
+Screens.leaderboard = () => {
+  const el = document.createElement('section');
+  el.className = 'screen scroll leaderboard';
+  const master = Profile.state.master;
+  el.innerHTML = `<header class="hub-head"><h1 class="display">Master leaderboard</h1>
+    <button class="btn" data-go="hub">Back</button></header>
+    <p>Best streak: <b>${master.best}</b> · ${Util.plural(master.runs, 'finished run', 'finished runs')}</p>
+    <p>Saved only in this browser. Each streak ends on the first mistake. Ranges are shown so you can compare like with like.</p>
+    <ol class="sheet-stats" data-leaderboard>${master.leaderboard.map(entry =>
+      `<li><b>${entry.streak} in a row</b><span>${Util.esc(new Date(entry.at).toLocaleDateString())} · range ${entry.range.min}–${entry.range.max}</span></li>`).join('')}</ol>
+    ${master.leaderboard.length ? '' : '<p>No finished Master runs yet.</p>'}
+    <button class="btn btn-good" data-go="master">Play Master</button>`;
+  el.addEventListener('click', e => {
+    const button = e.target.closest('[data-go]');
+    if (!button) return;
+    AudioEngine.play('tap');
+    if (button.dataset.go === 'master') App.go('play', { mode: 'master' });
+    else App.go('hub');
+  });
+  return { name: 'leaderboard', el, mount() {}, destroy() {}, onBack() { App.go('hub'); return true; } };
+};
+
+Screens.masterResults = ({ summary }) => {
+  const el = document.createElement('section');
+  el.className = 'screen scroll results master-results';
+  el.innerHTML = `<div class="res-card panel">
+    <h1 class="res-title display">${summary.record.newBest ? 'New best streak!' : 'Master streak finished'}</h1>
+    <p class="res-score" data-master-streak>${summary.bestStreak}<small> in a row</small></p>
+    <p>Best: ${summary.record.best}</p>
+    <p>Your streak is saved on this browser’s leaderboard.</p>
+    <ul class="res-list">${summary.missed.map(({ eq }) => `<li>${EquationFactory.text(eq)}</li>`).join('')}</ul>
+    </div><div class="res-actions">
+    <button class="btn btn-good" data-go="master">Try Master again</button>
+    <button class="btn" data-go="leaderboard">Local leaderboard</button>
+    <button class="btn" data-go="hub">Levels</button></div>`;
+  el.addEventListener('click', e => {
+    const button = e.target.closest('[data-go]');
+    if (!button) return;
+    AudioEngine.play('tap');
+    if (button.dataset.go === 'master') App.go('play', { mode: 'master' });
+    else App.go(button.dataset.go);
+  });
+  return {
+    name: 'masterResults', el,
+    mount() { UI.announce(`Master streak: ${summary.bestStreak}. Best: ${summary.record.best}.`); },
+    destroy() {},
+    onBack() { App.go('hub'); return true; },
   };
 };
 
@@ -2611,17 +2856,18 @@ const STREAK_CALLOUTS = new Set([3, 5, 10, 15, 20, 25, 30, 35, 40]);
 Screens.play = ({ mode, level }) => {
   const session = new GameSession({ mode, level });
   const isSprint = mode === 'sprint';
+  const isMaster = mode === 'master';
   const el = document.createElement('section');
   el.className = `screen play mode-${mode}`;
-  el.setAttribute('aria-label', `Level ${level} ${isSprint ? 'Final Sprint' : 'practice'}`);
-  const trayIds = isSprint ? ['timeWarp', 'freezeRay', 'secondChance'] : ['secondChance'];
+  el.setAttribute('aria-label', isMaster ? 'Master streak' : `Level ${level} ${isSprint ? 'Final Sprint' : 'practice'}`);
+  const trayIds = isMaster ? [] : isSprint ? ['timeWarp', 'freezeRay', 'secondChance'] : ['secondChance'];
 
   el.innerHTML = `
     <div class="pane-eq">
       <header class="play-top">
         <button class="icon-btn sm" data-action="exit" aria-label="Leave this run">✖️</button>
         ${isSprint ? '<button class="icon-btn sm" data-action="pause" aria-label="Pause">⏸️</button>' : '<button class="icon-btn sm" data-action="restart" aria-label="Restart this practice" hidden>↻</button>'}
-        <div class="play-title display">Level ${level} · ${isSprint ? 'Sprint' : 'Practice'}</div>
+        <div class="play-title display">${isMaster ? 'Master · mixed tables' : `Level ${level} · ${isSprint ? 'Sprint' : 'Practice'}`}</div>
         ${isSprint ? `
           <div class="timer" data-timer hidden aria-hidden="true">
             <i class="timer-fill" data-ring></i>
@@ -2630,7 +2876,10 @@ Screens.play = ({ mode, level }) => {
         ${Wallet.html(true)}
       </header>
       <div class="play-status">
-        ${isSprint ? `
+        ${isMaster ? `
+          <span class="eq-count">Equation <b data-qnum>1</b></span>
+          <span class="score-pill">Streak: <b data-score>0</b></span>`
+        : isSprint ? `
           <span class="eq-count">Equation <b data-qnum>1</b>/${session.total}</span>
           <span class="freeze-badge" data-freeze hidden>❄️ <b data-freeze-s>5</b>s</span>
           <span class="score-pill" aria-label="Correct answers">✓ <b data-score>0</b></span>
@@ -2647,6 +2896,7 @@ Screens.play = ({ mode, level }) => {
         <div class="countdown" data-countdown hidden></div>
       </div>
       <div class="tray" data-tray>
+        ${isMaster ? '<span class="badge streak">One mistake ends the streak</span>' : ''}
         ${trayIds.map(id => {
           const p = POWERUP_BY_ID.get(id);
           return `<button class="chip" data-power="${id}"><span class="ico" aria-hidden="true">${p.icon}</span><span class="chip-label${id === 'timeWarp' ? ' keep' : ''}">${p.chip}</span><span class="count" data-count>0</span>${id === 'timeWarp' ? '<span class="chip-note" data-note></span>' : ''}</button>`;
@@ -2920,7 +3170,7 @@ Screens.play = ({ mode, level }) => {
     if (!wasPaused) session.pause('exit');
     const leave = await UI.confirm({
       title: 'Leave this run?',
-      message: isSprint ? 'Your sprint will stop. Stars you earned stay in your wallet.' : 'This practice won’t count, but you keep the stars you earned.',
+      message: isMaster ? 'This unfinished Master run won’t go on the leaderboard.' : isSprint ? 'Your sprint will stop. Stars you earned stay in your wallet.' : 'This practice won’t count, but you keep the stars you earned.',
       yes: 'Leave', no: 'Keep playing', icon: '🚪', danger: true,
     });
     exitOpen = false;
@@ -2982,6 +3232,7 @@ Screens.play = ({ mode, level }) => {
     updateDots();
     updateScore();
     if (eq.isReview) setSub('<span class="badge rematch">🔁 Rematch!</span>');
+    else if (isMaster) subEl.innerHTML = `<span class="badge streak">Table ×${eq.level}</span>`;
     else if (!factActive) subEl.innerHTML = '';
     UI.announce(`Equation ${index + 1}: ${EquationFactory.spoken(eq)}`);
   });
@@ -2992,7 +3243,7 @@ Screens.play = ({ mode, level }) => {
     if (answerEl) { answerEl.classList.remove('empty', 'bad'); answerEl.classList.add('ok'); }
     AudioEngine.play('correct');
     FX.burstFrom(answerEl, isSprint ? 8 : 14);
-    FX.floatText('+1 ⭐', answerEl, el.querySelector('.wallet'));
+    if (!isMaster) FX.floatText('+1 ⭐', answerEl, el.querySelector('.wallet'));
     if (review && review.cleared) setSub('<span class="badge good">🏅 Rematch won! Cleared!</span>');
     else if (review && review.streak === 1) setSub('<span class="badge good">🔁 Nice! Once more to clear it</span>');
     else if (retried) setSub('<span class="badge good">Phew! Saved by Second Chance 🔄</span>');
@@ -3106,7 +3357,7 @@ Screens.play = ({ mode, level }) => {
       AudioEngine.play('whoosh');
     }
     setTimeout(() => {
-      if (App.screen === controller) App.go('results', { summary });
+      if (App.screen === controller) App.go(summary.mode === 'master' ? 'masterResults' : 'results', { summary });
     }, summary.reason === 'timeout' ? 1000 : 650);
   });
 
@@ -3324,7 +3575,7 @@ const App = {
 
 window.MathSprints = Object.freeze({
   version: '1.0.0', CONFIG, THEMES, POWERUPS, Util, RNG, Bus, Store, Profile,
-  EquationFactory, ReviewQueue, GameSession, SprintTimer, Delay, AudioEngine, UI, App,
+  EquationFactory, Learning, ReviewQueue, GameSession, SprintTimer, Delay, AudioEngine, UI, App,
 });
 Object.defineProperty(window, 'UserPoints', { get: () => Profile.points, configurable: true });
 
