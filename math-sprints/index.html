@@ -404,6 +404,15 @@ button, .key, .chip, .level-card, .wallet, .tab {
 .lc-crown { position: absolute; top: -17px; left: 50%; transform: translateX(-50%) rotate(-8deg); font-size: 1.5rem; }
 @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 .hub-foot { margin: 18px 4px 4px; text-align: center; font-weight: 800; font-size: .95rem; opacity: .95; text-shadow: var(--ink-shadow); }
+.explorer { padding: 12px; margin: 10px 0; display: grid; gap: 8px; overflow-wrap: anywhere; }
+.explorer p { margin: 0; font-size: .9rem; font-weight: 800; }
+.explorer progress { width: 100%; height: 12px; accent-color: var(--good); }
+.avatar { display: inline-block; font-size: 1.5rem; vertical-align: middle; }
+.play-title .avatar { font-size: 1.1rem; }
+.recommendation { display: flex; align-items: center; gap: 10px; }
+.recommendation p { flex: 1; min-width: 0; }
+.reward-lines { list-style: none; margin: 0; padding: 0; width: 100%; font-weight: 800; font-size: .95rem; }
+.reward-lines li { margin: 4px 0; }
 .notice { margin: 12px 0 0; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--bad-soft); color: var(--bad-text); font-weight: 800; font-size: .9rem; text-align: center; }
 
 /* =====================================================================
@@ -520,7 +529,8 @@ button, .key, .chip, .level-card, .wallet, .tab {
 /* =====================================================================
    7. RESULTS
    ===================================================================== */
-.results { justify-content: center; gap: 14px; }
+.results { justify-content: safe center; gap: 14px; }
+.res-card, .res-actions { flex-shrink: 0; }
 .res-card { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 22px 16px; text-align: center; }
 .res-mascot { width: 76px; height: 76px; }
 .res-title { margin: 0; font-size: clamp(1.7rem, 8.5vw, 2.5rem); line-height: 1.05; color: var(--accent-text); text-shadow: var(--display-glow); }
@@ -546,7 +556,7 @@ button, .key, .chip, .level-card, .wallet, .tab {
    ===================================================================== */
 .top-row { display: flex; align-items: center; gap: 10px; }
 .top-row h1 { flex: 1; margin: 0; font-size: clamp(1.6rem, 7vw, 2.1rem); text-shadow: var(--display-glow), var(--ink-shadow); }
-.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 16px 0 14px; padding: 6px; border-radius: var(--pill); background: var(--surface); box-shadow: var(--surface-shadow); }
+.tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 16px 0 14px; padding: 6px; border-radius: var(--pill); background: var(--surface); box-shadow: var(--surface-shadow); }
 .tab { appearance: none; border: 0; cursor: pointer; min-height: 48px; border-radius: var(--pill); background: transparent; color: var(--surface-ink); font-weight: 900; font-size: 1.02rem; }
 .tab[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
 .shop-list { display: grid; gap: 14px; padding: 4px 0 18px; }
@@ -572,7 +582,7 @@ button, .key, .chip, .level-card, .wallet, .tab {
 .stepper output { text-align: center; font-family: var(--font-num); font-weight: 900; font-size: 1.5rem; }
 .stepper .icon-btn { min-width: 52px; min-height: 52px; }
 .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 900; }
-.switch { appearance: none; border: 0; cursor: pointer; position: relative; width: 72px; height: 44px; border-radius: 999px; background: var(--surface-2); box-shadow: inset 0 0 0 2px var(--surface-border); flex: none; }
+.switch { appearance: none; border: 0; cursor: pointer; position: relative; width: 72px; height: 48px; border-radius: 999px; background: var(--surface-2); box-shadow: inset 0 0 0 2px var(--surface-border); flex: none; }
 .switch::after { content: ""; position: absolute; top: 5px; left: 5px; width: 34px; height: 34px; border-radius: 50%; background: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,.3); transition: transform .18s ease-out; }
 .switch[aria-checked="true"] { background: var(--good); box-shadow: none; }
 .switch[aria-checked="true"]::after { transform: translateX(28px); }
@@ -633,7 +643,7 @@ button, .key, .chip, .level-card, .wallet, .tab {
    ===================================================================== */
 const CONFIG = Object.freeze({
   STORAGE_KEY: 'mathSprints.v1',
-  SCHEMA_VERSION: 1,
+  SCHEMA_VERSION: 2,
   LEVELS: Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9]),
   DEFAULT_RANGE: Object.freeze({ min: 1, max: 25 }),
   RANGE_LIMIT: Object.freeze({ min: 1, max: 99 }),
@@ -665,15 +675,38 @@ const CONFIG = Object.freeze({
 
 const THEMES = Object.freeze([
   Object.freeze({ id: 'sunny', name: 'Sunny Pop', cost: 0, icon: '☀️', blurb: 'Sunny skies, fluffy clouds and candy keys.' }),
-  Object.freeze({ id: 'cosmic', name: 'Cosmic Voyage', cost: 40, icon: '🚀', blurb: 'Deep space, neon star keys and arcade fonts.' }),
-  Object.freeze({ id: 'forest', name: 'Enchanted Forest', cost: 60, icon: '🌳', blurb: 'Mossy greens, leafy borders and wooden keys.' }),
-  Object.freeze({ id: 'synth', name: 'Retro Synthwave', cost: 80, icon: '🌆', blurb: 'Hot pink sunsets and a cyber-grid keypad.' }),
+  Object.freeze({ id: 'cosmic', name: 'Cosmic Voyage', cost: 80, icon: '🚀', blurb: 'Deep space, neon star keys and arcade fonts.' }),
+  Object.freeze({ id: 'forest', name: 'Enchanted Forest', cost: 160, icon: '🌳', blurb: 'Mossy greens, leafy borders and wooden keys.' }),
+  Object.freeze({ id: 'synth', name: 'Retro Synthwave', cost: 260, icon: '🌆', blurb: 'Hot pink sunsets and a cyber-grid keypad.' }),
 ]);
 
+const AVATARS = Object.freeze([
+  { id: 'spark', name: 'Starter Spark', cost: 0, icon: '⚡' },
+  { id: 'robot', name: 'Robot', cost: 15, icon: '🤖' },
+  { id: 'fox', name: 'Fox', cost: 50, icon: '🦊' },
+  { id: 'owl', name: 'Owl', cost: 100, icon: '🦉' },
+  { id: 'dragon', name: 'Dragon', cost: 180, icon: '🐉' },
+  { id: 'rocket', name: 'Rocket', cost: 300, icon: '🚀' },
+  { id: 'phoenix', name: 'Phoenix', cost: 450, icon: '🔥' },
+  { id: 'champion', name: 'Champion', cost: 0, icon: '🏆' },
+].map(Object.freeze));
+const AVATAR_BY_ID = new Map(AVATARS.map(a => [a.id, a]));
+const PRACTICE_BONUSES = Object.freeze([5, 10, 15]);
+const MASTER_MILESTONES = Object.freeze([[5, 5], [10, 10], [20, 15], [35, 20], [50, 25], [75, 35], [100, 50]].map(Object.freeze));
+const RANKS = Object.freeze([
+  [0, 'Trail Starter'], [100, 'Spark Scout'], [300, 'Path Finder'], [650, 'Forest Explorer'],
+  [1100, 'Mountain Climber'], [1700, 'Sky Voyager'], [2500, 'Star Seeker'],
+  [3500, 'Galaxy Ranger'], [4800, 'Cosmic Captain'], [6500, 'Infinity Explorer'],
+].map(Object.freeze));
+const COSMETICS = Object.freeze([
+  ...AVATARS.filter(a => a.cost > 0).map(a => ({ ...a, key: `avatar:${a.id}`, kind: 'avatar' })),
+  ...THEMES.filter(t => t.cost > 0).map(t => ({ ...t, key: `theme:${t.id}`, kind: 'theme' })),
+].sort((a, b) => a.cost - b.cost).map(Object.freeze));
+
 const POWERUPS = Object.freeze([
-  Object.freeze({ id: 'timeWarp', name: 'Time Warp', icon: '⏱️', cost: 25, chip: '+10s', blurb: 'Adds 10 seconds to the Sprint clock.', rule: 'Final Sprint only · max 2 per sprint', modes: Object.freeze(['sprint']) }),
-  Object.freeze({ id: 'secondChance', name: 'Second Chance', icon: '🔄', cost: 15, chip: 'Redo', blurb: 'Wipes away a wrong answer so you can try again.', rule: 'Practice & Sprint · offered right after a mistake', modes: Object.freeze(['practice', 'sprint']) }),
-  Object.freeze({ id: 'freezeRay', name: 'Freeze Ray', icon: '❄️', cost: 35, chip: 'Freeze', blurb: 'Freezes the Sprint clock for 5 seconds while you keep solving.', rule: 'Final Sprint only · one freeze at a time', modes: Object.freeze(['sprint']) }),
+  Object.freeze({ id: 'timeWarp', name: 'Time Warp', icon: '⏱️', cost: 10, chip: '+10s', blurb: 'Adds 10 seconds to the Sprint clock.', rule: 'Final Sprint only · max 2 per sprint', modes: Object.freeze(['sprint']) }),
+  Object.freeze({ id: 'secondChance', name: 'Second Chance', icon: '🔄', cost: 8, chip: 'Redo', blurb: 'Wipes away a wrong answer so you can try again.', rule: 'Practice & Sprint · offered right after a mistake', modes: Object.freeze(['practice', 'sprint']) }),
+  Object.freeze({ id: 'freezeRay', name: 'Freeze Ray', icon: '❄️', cost: 12, chip: 'Freeze', blurb: 'Freezes the Sprint clock for 5 seconds while you keep solving.', rule: 'Final Sprint only · one freeze at a time', modes: Object.freeze(['sprint']) }),
 ]);
 
 const THEME_BY_ID = new Map(THEMES.map(t => [t.id, t]));
@@ -771,7 +804,9 @@ const Bus = (() => {
    ===================================================================== */
 const Store = (() => {
   const KEY = CONFIG.STORAGE_KEY;
+  const RESET_KEY = `${KEY}.resetGeneration`;
   let ls = null;
+  let generation = '';
   let memoryCopy = null;
   let lastWriteOk = true;
   try {
@@ -782,14 +817,35 @@ const Store = (() => {
   } catch (err) {
     ls = null;
   }
+  const dataKey = id => id ? `${KEY}.generation.${id}` : KEY;
+  function storedGeneration() {
+    const value = ls.getItem(RESET_KEY);
+    return value === null ? '' : /^[a-zA-Z0-9-]{1,128}$/.test(value) ? value : 'invalid';
+  }
+  function storageWarning() {
+    lastWriteOk = false;
+    Bus.emit('storage:warning', { available: ls !== null });
+  }
   return {
     KEY,
+    RESET_KEY,
+    get generation() { return generation; },
+    get dataKey() { return dataKey(generation); },
     get available() { return ls !== null; },
     get healthy() { return ls !== null && lastWriteOk; },
+    isCurrent() {
+      if (!ls) return true;
+      try { return storedGeneration() === generation; }
+      catch (err) { storageWarning(); return true; }
+    },
     read() {
       let raw = memoryCopy;
       if (ls) {
-        try { raw = ls.getItem(KEY); } catch (err) { raw = memoryCopy; }
+        try {
+          generation = storedGeneration();
+          raw = ls.getItem(dataKey(generation));
+          memoryCopy = raw;
+        } catch (err) { storageWarning(); raw = memoryCopy; }
       }
       if (raw === null || raw === undefined) return { status: 'empty', data: null };
       try {
@@ -800,15 +856,31 @@ const Store = (() => {
       }
     },
     write(obj) {
+      if (!Store.isCurrent()) {
+        Bus.emit('profile:reset-external');
+        return false;
+      }
       let raw;
       try { raw = JSON.stringify(obj); } catch (err) { lastWriteOk = false; return false; }
       memoryCopy = raw;
       if (!ls) { lastWriteOk = false; return false; }
-      try { ls.setItem(KEY, raw); lastWriteOk = true; return true; } catch (err) { lastWriteOk = false; return false; }
+      try { ls.setItem(dataKey(generation), raw); lastWriteOk = true; return true; } catch (err) { lastWriteOk = false; return false; }
     },
-    remove() {
-      memoryCopy = null;
-      if (ls) { try { ls.removeItem(KEY); } catch (err) { /* ignore */ } }
+    reset(obj) {
+      const previous = generation;
+      const next = window.crypto.randomUUID();
+      memoryCopy = JSON.stringify(obj);
+      if (!ls) { generation = next; storageWarning(); return; }
+      try {
+        // Publish the empty profile before its generation. Old tabs can only write
+        // the retired key; even pre-upgrade tabs cannot overwrite this profile.
+        ls.setItem(dataKey(next), memoryCopy);
+        ls.setItem(RESET_KEY, next);
+        generation = next;
+        ls.removeItem(dataKey(previous));
+        ls.removeItem(KEY);
+        ls.removeItem(`${KEY}.corrupt`);
+      } catch (err) { storageWarning(); }
     },
   };
 })();
@@ -820,7 +892,7 @@ const Profile = (() => {
   let state = null;
   let warned = false;
 
-  const newLevel = () => ({ perfectPractices: 0, practiceRuns: 0, sprintRuns: 0, sprintBest: 0, sprintPerfects: 0, sprintBestTimeMs: null, perfect: false, reviewQueue: [], learning: {}, learningRun: 0 });
+  const newLevel = () => ({ perfectPractices: 0, practiceRuns: 0, sprintRuns: 0, sprintBest: 0, sprintPerfects: 0, sprintBestTimeMs: null, perfect: false, reviewQueue: [], learning: {}, learningRun: 0, stampClaims: 0, cleared: false, masteryClaims: [] });
 
   function defaults() {
     const levels = {};
@@ -835,6 +907,7 @@ const Profile = (() => {
       settings: { sfx: true, music: false, haptics: true, range: { min: CONFIG.DEFAULT_RANGE.min, max: CONFIG.DEFAULT_RANGE.max } },
       levels,
       master: { best: 0, runs: 0, leaderboard: [] },
+      economy: { version: 1, xp: 0, avatars: { owned: ['spark'], active: 'spark' }, goal: 'avatar:robot', masterClaims: [] },
       createdAt: now,
       updatedAt: now,
     };
@@ -930,15 +1003,44 @@ const Profile = (() => {
       .slice(0, CONFIG.MASTER_LEADERBOARD_MAX);
     out.master.best = Math.max(Util.int(master.best, 0, 0, 1e6), ...out.master.leaderboard.map(entry => entry.streak));
     out.master.runs = Math.max(Util.int(master.runs, 0, 0, 1e9), out.master.leaderboard.length);
+    const economy = raw.economy && typeof raw.economy === 'object' ? raw.economy : {};
+    const legacy = economy.version !== 1;
+    CONFIG.LEVELS.forEach(n => {
+      const L = out.levels[n];
+      const src = levels[n] || {};
+      L.stampClaims = legacy ? Math.min(3, L.perfectPractices) : Util.int(src.stampClaims, 0, 0, 3);
+      L.cleared = legacy ? L.sprintBest === CONFIG.SPRINT_LENGTH && Number(src.sprintBest) === CONFIG.SPRINT_LENGTH : Util.bool(src.cleared, false);
+      const claims = legacy ? Object.keys(L.learning).filter(key => Learning.mastered(L.learning[key])) : src.masteryClaims;
+      L.masteryClaims = Array.from(new Set((Array.isArray(claims) ? claims : [])
+        .filter(key => typeof key === 'string' && /^[1-9]\d{0,3}$/.test(key) && n * Number(key) <= 9999)));
+    });
+    const recordedPerfects = CONFIG.LEVELS.filter(n => out.levels[n].perfect).length;
+    const initialXP = (Math.max(0, out.lifetimePoints - recordedPerfects * CONFIG.PERFECT_LEVEL_BONUS) + out.master.best) * 10;
+    out.economy.xp = legacy ? initialXP : Util.int(economy.xp, 0, 0, 1e12);
+    out.economy.masterClaims = MASTER_MILESTONES.filter(([streak]) => legacy
+      ? out.master.best >= streak : Array.isArray(economy.masterClaims) && economy.masterClaims.includes(streak)).map(([streak]) => streak);
+    const avatars = economy.avatars && typeof economy.avatars === 'object' ? economy.avatars : {};
+    out.economy.avatars.owned = Array.from(new Set(['spark', ...(Array.isArray(avatars.owned) ? avatars.owned : [])
+      .filter(id => AVATAR_BY_ID.has(id) && id !== 'champion'), ...(recordedPerfects === 9 ? ['champion'] : [])]));
+    out.economy.avatars.active = out.economy.avatars.owned.includes(avatars.active) ? avatars.active : 'spark';
+    const remaining = COSMETICS.filter(item => !(item.kind === 'theme' ? out.themes.owned : out.economy.avatars.owned).includes(item.id));
+    out.economy.goal = remaining.some(item => item.key === economy.goal) ? economy.goal : remaining[0]?.key || null;
     out.createdAt = Util.int(raw.createdAt, out.createdAt, 0, 8.64e15);
     return out;
   }
 
   function commit(reason) {
     state.updatedAt = Date.now();
+    const generation = Store.generation;
     const ok = Store.write(state);
+    if (generation !== Store.generation) return;
     if (!ok && !warned) { warned = true; Bus.emit('storage:warning', { available: Store.available }); }
     Bus.emit('profile:change', { reason });
+  }
+
+  function credit(amount) {
+    state.userPoints += amount;
+    state.lifetimePoints += amount;
   }
 
   return {
@@ -965,9 +1067,57 @@ const Profile = (() => {
     earn(amount) {
       const n = Util.int(amount, 0, 0, 1000);
       if (!n) return;
-      state.userPoints += n;
-      state.lifetimePoints += n;
+      credit(n);
       commit('earn');
+    },
+    earnXP() {
+      state.economy.xp = Math.min(1e12, state.economy.xp + 10);
+      commit('xp');
+    },
+    rank() {
+      const xp = state.economy.xp;
+      const index = RANKS.findLastIndex(([threshold]) => xp >= threshold);
+      const [threshold, title] = RANKS[index];
+      const next = RANKS[index + 1]?.[0] ?? null;
+      return { number: index + 1, title, xp, next, progress: next === null ? 1 : (xp - threshold) / (next - threshold) };
+    },
+    get avatar() { return AVATAR_BY_ID.get(state.economy.avatars.active); },
+    remainingCosmetics() {
+      return COSMETICS.filter(item => !(item.kind === 'theme' ? state.themes.owned : state.economy.avatars.owned).includes(item.id));
+    },
+    goal() { return Profile.remainingCosmetics().find(item => item.key === state.economy.goal) || Profile.remainingCosmetics()[0] || null; },
+    pinGoal(key) {
+      if (!Profile.remainingCosmetics().some(item => item.key === key)) return false;
+      state.economy.goal = key;
+      commit('goal');
+      return true;
+    },
+    advanceGoal() { state.economy.goal = Profile.goal()?.key || null; },
+    buyAvatar(id) {
+      const item = AVATAR_BY_ID.get(id);
+      if (!item || item.cost === 0) return { ok: false, reason: 'unknown' };
+      if (state.economy.avatars.owned.includes(id)) return { ok: false, reason: 'owned' };
+      if (!Profile.canAfford(item.cost)) return { ok: false, reason: 'funds' };
+      state.userPoints -= item.cost;
+      state.economy.avatars.owned.push(id);
+      Profile.advanceGoal();
+      commit('buy-avatar');
+      return { ok: true };
+    },
+    equipAvatar(id) {
+      if (!state.economy.avatars.owned.includes(id)) return false;
+      state.economy.avatars.active = id;
+      commit('avatar');
+      return true;
+    },
+    nextMasterMilestone() { return MASTER_MILESTONES.find(([streak]) => !state.economy.masterClaims.includes(streak)) || null; },
+    settleMastery(n, families) {
+      const L = state.levels[n];
+      const newly = [...families].filter(key => !L.masteryClaims.includes(key) && L.learning[key] && Learning.mastered(L.learning[key]));
+      if (!newly.length) return [];
+      L.masteryClaims.push(...newly);
+      Profile.earn(newly.length * 2);
+      return [{ label: `${Util.plural(newly.length, 'new fact family', 'new fact families')} mastered`, stars: newly.length * 2 }];
     },
     canAfford: cost => Number.isInteger(cost) && cost >= 0 && state.userPoints >= cost,
     ownsTheme: id => state.themes.owned.includes(id),
@@ -978,6 +1128,7 @@ const Profile = (() => {
       if (!Profile.canAfford(theme.cost)) return { ok: false, reason: 'funds' };
       state.userPoints -= theme.cost;
       state.themes.owned.push(id);
+      Profile.advanceGoal();
       commit('buy-theme');
       return { ok: true };
     },
@@ -1027,16 +1178,30 @@ const Profile = (() => {
       master.leaderboard.push({ streak, at: Date.now(), range: { ...range } });
       master.leaderboard.sort((a, b) => b.streak - a.streak || a.at - b.at);
       master.leaderboard.length = Math.min(master.leaderboard.length, CONFIG.MASTER_LEADERBOARD_MAX);
+      const rewards = MASTER_MILESTONES.filter(([target]) => streak >= target && !state.economy.masterClaims.includes(target))
+        .map(([target, stars]) => {
+          state.economy.masterClaims.push(target);
+          return { label: `Master streak ${target}`, stars };
+        });
+      credit(rewards.reduce((total, reward) => total + reward.stars, 0));
       commit('master');
-      return { newBest: streak > previous, best: master.best };
+      return { newBest: streak > previous, best: master.best, rewards };
     },
     recordPractice(n, perfect) {
       const L = state.levels[n];
       const wasUnlocked = L.perfectPractices >= CONFIG.PERFECT_RUNS_TO_UNLOCK;
       L.practiceRuns += 1;
       if (perfect) L.perfectPractices += 1;
+      const rewards = [];
+      const stamp = Math.min(3, L.perfectPractices);
+      if (perfect && stamp > L.stampClaims) {
+        L.stampClaims = stamp;
+        const stars = PRACTICE_BONUSES[stamp - 1];
+        rewards.push({ label: `Practice stamp ${stamp}`, stars });
+        credit(stars);
+      }
       commit('practice');
-      return { perfectPractices: L.perfectPractices, justUnlocked: !wasUnlocked && L.perfectPractices >= CONFIG.PERFECT_RUNS_TO_UNLOCK };
+      return { perfectPractices: L.perfectPractices, justUnlocked: !wasUnlocked && L.perfectPractices >= CONFIG.PERFECT_RUNS_TO_UNLOCK, rewards };
     },
     recordSprint(n, { score, timeMs, finishedAll, noPowerups = false, timeLeftMs = 0 }) {
       const L = state.levels[n];
@@ -1058,18 +1223,27 @@ const Profile = (() => {
       const perfectLevel = perfect && finishedAll && noPowerups && timeLeftMs > 0;
       const justPerfected = perfectLevel && !L.perfect;
       const bonus = justPerfected ? CONFIG.PERFECT_LEVEL_BONUS : 0;
+      const justCleared = finishedAll && s >= 30 && timeLeftMs > 0 && !L.cleared;
+      const rewards = [];
+      if (justCleared) {
+        L.cleared = true;
+        rewards.push({ label: 'First Sprint clear', stars: 25 });
+        credit(25);
+      }
       if (justPerfected) {
         L.perfect = true;
-        state.userPoints += bonus;
-        state.lifetimePoints += bonus;
+        credit(bonus);
+        rewards.push({ label: 'First unassisted Perfect crown', stars: bonus });
+        if (CONFIG.LEVELS.every(level => state.levels[level].perfect) && !state.economy.avatars.owned.includes('champion')) {
+          state.economy.avatars.owned.push('champion');
+        }
       }
       commit('sprint');
-      return { newBest, firstRun, prevBest, perfect, newBestTime, perfectLevel, justPerfected, bonus };
+      return { newBest, firstRun, prevBest, perfect, newBestTime, perfectLevel, justPerfected, bonus, justCleared, rewards };
     },
     reset() {
-      const keepSettings = { sfx: state.settings.sfx, music: state.settings.music, haptics: state.settings.haptics };
       state = defaults();
-      Object.assign(state.settings, keepSettings);
+      Store.reset(state);
       commit('reset');
     },
   };
@@ -1503,6 +1677,7 @@ class SprintTimer {
 class GameSession {
   constructor({ mode, level }) {
     this.mode = mode;
+    this.generation = Store.generation;
     this.level = level;
     this.range = Profile.range;
     this.total = mode === 'master' ? Infinity : mode === 'practice' ? CONFIG.PRACTICE_LENGTH : CONFIG.SPRINT_LENGTH;
@@ -1517,6 +1692,10 @@ class GameSession {
     this.correct = 0;
     this.wrong = 0;
     this.points = 0;
+    this.xp = 0;
+    this.rewardedQuestions = new Set();
+    this.cleanFamilies = new Set();
+    this.missedFamilies = new Set();
     this.results = [];
     this.missed = [];
     this.failed = false;
@@ -1551,6 +1730,12 @@ class GameSession {
   get isSprint() { return this.mode === 'sprint'; }
   get isMaster() { return this.mode === 'master'; }
   get finished() { return this.phase === 'finished'; }
+  ensureCurrent() {
+    if (this.generation === Store.generation && Store.isCurrent()) return !this.finished;
+    this.abandon();
+    Bus.emit('profile:reset-external');
+    return false;
+  }
 
   after(ms, fn) {
     const d = new Delay(ms, () => {
@@ -1588,6 +1773,7 @@ class GameSession {
   }
 
   ask() {
+    if (!this.ensureCurrent()) return;
     this.input = '';
     this.retrying = false;
     this.setPhase('asking');
@@ -1595,6 +1781,7 @@ class GameSession {
   }
 
   press(key) {
+    if (!this.ensureCurrent()) return { ok: false, reason: 'reset' };
     if (this.phase !== 'asking' || this.paused) return { ok: false, reason: 'locked' };
     if (key === 'ok') return this.submit();
     if (key === 'del') {
@@ -1623,6 +1810,7 @@ class GameSession {
   }
 
   submit() {
+    if (!this.ensureCurrent()) return { ok: false, reason: 'reset' };
     if (this.phase !== 'asking' || this.paused) return { ok: false, reason: 'locked' };
     if (!this.input) return { ok: false, reason: 'empty' };
     const eq = this.current;
@@ -1633,6 +1821,12 @@ class GameSession {
   }
 
   onCorrect(eq, given) {
+    if (!this.ensureCurrent()) return;
+    if (this.phase !== 'asking' || this.rewardedQuestions.has(this.index)) return;
+    this.rewardedQuestions.add(this.index);
+    this.xp += 10;
+    Profile.earnXP();
+    if (this.finished) return;
     this.correct += 1;
     this.streak += 1;
     this.bestStreak = Math.max(this.bestStreak, this.streak);
@@ -1640,12 +1834,18 @@ class GameSession {
       this.points += CONFIG.POINTS_PER_CORRECT;
       this.results[this.index] = 'ok';
       Profile.earn(CONFIG.POINTS_PER_CORRECT);
+      if (this.finished) return;
     }
     // The last answer completes the sprint; feedback animation must not consume its spare time.
     if (this.isSprint && this.index === this.total - 1 && this.timer.remaining > 0) this.timer.stop();
     let review = null;
     if (this.mode === 'practice') {
-      if (!this.retrying) Learning.record(this.level, eq, true, this.learningRun);
+      if (!this.retrying) {
+        Learning.record(this.level, eq, true, this.learningRun);
+        if (this.finished) return;
+        const family = Learning.family(eq, this.level);
+        if (!this.missedFamilies.has(family)) this.cleanFamilies.add(family);
+      }
       review = ReviewQueue.record(this.level, eq, true, eq.isReview && !this.retrying);
       if (review.cleared) this.reviewCleared += 1;
     }
@@ -1655,9 +1855,14 @@ class GameSession {
   }
 
   onWrong(eq, given) {
+    if (!this.ensureCurrent()) return;
     this.streak = 0;
     if (this.mode === 'practice') {
+      const family = Learning.family(eq, this.level);
+      this.missedFamilies.add(family);
+      this.cleanFamilies.delete(family);
       Learning.record(this.level, eq, false, this.learningRun);
+      if (this.finished) return;
       ReviewQueue.record(this.level, eq, false, false);
     }
     const canRedo = !this.isMaster && Profile.count('secondChance') > 0 && (this.isSprint || !this.failed);
@@ -1674,6 +1879,7 @@ class GameSession {
   }
 
   useSecondChance() {
+    if (!this.ensureCurrent()) return false;
     if (this.phase !== 'prompt' || this.paused || !this.pending) return false;
     if (!Profile.consume('secondChance')) { this.declineSecondChance(); return false; }
     this.cancelDelay(this.promptDelay);
@@ -1688,6 +1894,7 @@ class GameSession {
   }
 
   declineSecondChance() {
+    if (!this.ensureCurrent()) return false;
     if (this.phase !== 'prompt' || !this.pending) return false;
     this.cancelDelay(this.promptDelay);
     this.promptDelay = null;
@@ -1711,6 +1918,7 @@ class GameSession {
   }
 
   advance() {
+    if (!this.ensureCurrent()) return;
     if (this.phase === 'finished') return;
     this.index += 1;
     if (this.isMaster && this.index % CONFIG.LEVELS.length === 0) {
@@ -1734,6 +1942,7 @@ class GameSession {
   }
 
   usePowerup(id) {
+    if (!this.ensureCurrent()) return { ok: false, reason: 'reset' };
     const check = this.canUse(id);
     if (!check.ok) return check;
     if (id === 'secondChance') return { ok: this.useSecondChance() };
@@ -1768,6 +1977,7 @@ class GameSession {
   }
 
   finish(reason) {
+    if (!this.ensureCurrent()) return;
     if (this.phase === 'finished') return;
     if (this.phase === 'prompt' && this.pending) {
       // Time ran out inside the redo window: the miss stands.
@@ -1786,10 +1996,12 @@ class GameSession {
       correct: this.correct, wrong: this.wrong, total: this.total,
       answered: Math.min(this.total, this.correct + this.wrong),
       points: this.points, missed: this.missed.slice(), bestStreak: this.bestStreak,
+      baseStars: this.points, xp: this.xp, rewards: [],
       used: { ...this.used }, reviewCount: this.reviewCount, reviewCleared: this.reviewCleared,
     };
     if (this.isMaster) {
-      summary.record = Profile.recordMaster(this.bestStreak, this.range);
+      summary.record = reason === 'mistake' ? Profile.recordMaster(this.bestStreak, this.range) : { newBest: false, best: Profile.state.master.best, rewards: [] };
+      summary.rewards = summary.record.rewards;
     } else if (this.isSprint) {
       const finishedAll = reason === 'complete';
       const record = Profile.recordSprint(this.level, {
@@ -1797,13 +2009,23 @@ class GameSession {
         noPowerups: Object.values(this.used).every(count => count === 0),
         timeLeftMs: this.timer.remaining,
       });
-      summary.points += record.bonus;
+      summary.rewards = record.rewards;
       Object.assign(summary, { finishedAll, timeUsedMs: this.timer.consumed, timeLeftMs: this.timer.remaining, record });
     } else {
       const perfect = reason === 'complete' && !this.failed && this.correct === this.total;
       const record = Profile.recordPractice(this.level, perfect);
+      if (this.generation !== Store.generation || !Store.isCurrent()) {
+        Bus.emit('profile:reset-external');
+        return;
+      }
+      summary.rewards = [...record.rewards, ...(reason === 'complete' ? Profile.settleMastery(this.level, this.cleanFamilies) : [])];
       Object.assign(summary, { perfect, failed: this.failed, record, reviewLeft: ReviewQueue.size(this.level) });
     }
+    if (this.generation !== Store.generation || !Store.isCurrent()) {
+      Bus.emit('profile:reset-external');
+      return;
+    }
+    summary.points += summary.rewards.reduce((total, reward) => total + reward.stars, 0);
     this.summary = summary;
     this.emit('phase', 'finished');
     this.emit('finish', summary);
@@ -2380,17 +2602,36 @@ function bindHold(btn, ms, onDone) {
   });
 }
 
+let resetOpen = false;
+async function requestFullReset() {
+  if (resetOpen || UI.top()) return;
+  resetOpen = true;
+  try {
+    const ok = await UI.confirm({ title: 'Erase everything?', message: 'All stars, XP, cosmetics, settings and progress on this device will be deleted. This cannot be undone.', yes: 'Erase', no: 'Cancel', icon: '⚠️', danger: true });
+    if (!ok) return;
+    const sure = await UI.confirm({ title: 'Really sure?', message: 'Last chance: tap Erase to start again from zero.', yes: 'Erase', no: 'Keep it', icon: '🗑️', danger: true });
+    if (!sure) return;
+    Profile.reset();
+    App.externalChange = false;
+    App.applyTheme();
+    AudioEngine.setSfx(Profile.state.settings.sfx);
+    AudioEngine.setMusic(Profile.state.settings.music);
+    App.go('hub');
+    UI.toast('Progress erased. Fresh start! 🌱');
+  } finally { resetOpen = false; }
+}
+
 function levelCardHTML(n) {
   const L = Profile.level(n);
   const done = Math.min(L.perfectPractices, CONFIG.PERFECT_RUNS_TO_UNLOCK);
   const unlocked = Profile.isSprintUnlocked(n);
   const rq = L.reviewQueue.length;
-  const mastered = L.sprintPerfects > 0;
+  const mastered = L.perfect;
   let sprint;
   if (!unlocked) sprint = '<span class="lc-sprint locked">🔒 Sprint</span>';
   else if (L.sprintRuns === 0) sprint = '<span class="lc-sprint ready">🏁 Sprint!</span>';
   else sprint = `<span class="lc-sprint best">🏆 ${L.sprintBest}/${CONFIG.SPRINT_LENGTH}</span><span class="lc-runs">${Util.plural(L.sprintRuns, 'run', 'runs')}</span>`;
-  const label = `Level ${n}.${L.perfect ? ' Perfect.' : ''} Practice: ${unlocked ? 'complete' : `${done} of ${CONFIG.PERFECT_RUNS_TO_UNLOCK} perfect runs`}. Final Sprint ${unlocked ? (L.sprintRuns ? `best score ${L.sprintBest} of ${CONFIG.SPRINT_LENGTH}, ${Util.plural(L.sprintRuns, 'run', 'runs')}` : 'unlocked') : 'locked'}.${rq ? ` ${Util.plural(rq, 'rematch', 'rematches')} waiting.` : ''}`;
+  const label = `Level ${n}.${L.perfect ? ' Perfect crown.' : ''}${L.cleared ? ' Adventure cleared.' : ''} Practice: ${unlocked ? 'complete' : `${done} of ${CONFIG.PERFECT_RUNS_TO_UNLOCK} perfect runs`}. Final Sprint ${unlocked ? (L.sprintRuns ? `best score ${L.sprintBest} of ${CONFIG.SPRINT_LENGTH}, ${Util.plural(L.sprintRuns, 'run', 'runs')}` : 'unlocked') : 'locked'}.${rq ? ` ${Util.plural(rq, 'rematch', 'rematches')} waiting.` : ''}`;
   return `<li><button class="level-card panel${mastered ? ' mastered' : ''}" data-level="${n}" aria-label="${Util.esc(label)}">
     ${mastered ? '<span class="lc-crown" aria-hidden="true">👑</span>' : ''}
     ${rq ? `<span class="lc-review" aria-hidden="true">🔁${rq}</span>` : ''}
@@ -2399,6 +2640,7 @@ function levelCardHTML(n) {
     <span class="lc-label" aria-hidden="true">Practice:</span>
     <span class="lc-value" aria-hidden="true">${unlocked ? 'Complete ✅' : `${done}/${CONFIG.PERFECT_RUNS_TO_UNLOCK}`}</span>
     ${L.perfect ? '<span class="badge ready" data-perfect-badge>Perfect</span>' : ''}
+    <span class="lc-label" data-table-path>${done}/3 stamps · ${L.cleared ? 'Clear ✓' : 'Clear ○'}</span>
     <span class="lc-foot" aria-hidden="true">${sprint}</span>
   </button></li>`;
 }
@@ -2418,11 +2660,13 @@ function openLevelSheet(n) {
     <ul class="sheet-stats">
       ${L.perfect ? '<li><span class="badge ready" data-perfect-badge>Perfect</span><b>40/40 without power-ups</b></li>' : ''}
       <li><span>Fact families learned</span><b>${Object.values(L.learning).filter(item => Learning.mastered(item)).length}</b></li>
+      <li><span>Adventure</span><b>${done}/3 stamps · ${L.cleared ? 'Sprint cleared' : 'Sprint clear: +25 stars'}</b></li>
       <li><span>Perfect practices</span><b><span class="pips" aria-hidden="true">${pipsHTML(done)}</span> ${unlocked ? 'Complete ✅' : `${done}/${CONFIG.PERFECT_RUNS_TO_UNLOCK}`}</b></li>
       ${rq ? `<li><span>🔁 Rematches waiting</span><b>${rq}</b></li>` : ''}
       ${L.sprintRuns ? `<li><span>🏆 Best sprint</span><b>${L.sprintBest}/${CONFIG.SPRINT_LENGTH} · ${Util.plural(L.sprintRuns, 'run', 'runs')}</b></li>` : ''}
       ${L.sprintPerfects ? `<li><span>👑 40/40 sprints</span><b>${L.sprintPerfects}${L.sprintBestTimeMs !== null ? ` · fastest ${Util.fmtSecs(L.sprintBestTimeMs)}` : ''}</b></li>` : ''}
     </ul>
+    <p>First three perfect stamps: +5, +10, +15 stars. Finish all 40 Sprint questions with at least 30 correct and time left: +25 once. Helpers are welcome! Only the optional Perfect crown needs no helpers.</p>
     <div class="sheet-actions">
       <button class="btn btn-big btn-good" data-go="practice" data-autofocus>▶ Practice<small>${CONFIG.PRACTICE_LENGTH} questions · no timer · aim for 10/10</small></button>
       <button class="btn btn-big" data-go="sprint"${unlocked ? '' : ' aria-disabled="true"'}>${unlocked ? '⚡ Final Sprint' : '🔒 Final Sprint'}<small>${unlocked ? `${CONFIG.SPRINT_LENGTH} questions · ${Util.fmtTime(CONFIG.SPRINT_DURATION_MS)} on the clock` : `${needText} to unlock`}</small></button>
@@ -2446,18 +2690,51 @@ function openLevelSheet(n) {
   });
 }
 
+function nextTableMilestone() {
+  const uncleared = CONFIG.LEVELS.filter(n => !Profile.level(n).cleared)
+    .sort((a, b) => Math.min(3, Profile.level(b).perfectPractices) - Math.min(3, Profile.level(a).perfectPractices) || a - b);
+  if (uncleared.length) {
+    const level = uncleared[0];
+    const stamps = Math.min(3, Profile.level(level).perfectPractices);
+    return stamps < 3
+      ? { level, mode: 'practice', text: `Table ×${level}: perfect practice stamp ${stamps + 1} · +${PRACTICE_BONUSES[stamps]} bonus stars` }
+      : { level, mode: 'sprint', text: `Table ×${level}: finish 40, get 30+ right with time left · +25 bonus stars` };
+  }
+  const level = CONFIG.LEVELS.find(n => !Profile.level(n).perfect);
+  return level
+    ? { level, mode: 'sprint', text: `Table ×${level}: optional unassisted 40/40 crown · +20 bonus stars` }
+    : { level: 1, mode: 'practice', text: 'All nine adventures and crowns complete! Keep facts fresh: +1 star and 10 XP per correct answer.' };
+}
+
+function masterGoalText() {
+  const next = Profile.nextMasterMilestone();
+  return next ? `Next: ${next[0]} in a row · +${next[1]} stars once` : 'All Master star milestones collected! Keep exploring for XP.';
+}
+
+function rewardHTML(summary) {
+  return `<ul class="reward-lines" data-reward-lines>
+    <li>Correct-answer stars: +${summary.baseStars}</li>
+    ${summary.rewards.map(reward => `<li>${Util.esc(reward.label)}: +${reward.stars} stars</li>`).join('')}
+    <li data-earned-xp>Explorer XP: +${summary.xp} (effort, not mastery)</li>
+    </ul>`;
+}
+
 Screens.hub = () => {
   const el = document.createElement('section');
   el.className = 'screen scroll hub';
   el.setAttribute('aria-labelledby', 'hub-title');
   let off = null;
+  let brandTaps = [];
 
   function render() {
     const s = Profile.state;
+    const rank = Profile.rank();
+    const goal = Profile.goal();
+    const recommendation = nextTableMilestone();
     const scroll = el.scrollTop;
     el.innerHTML = `
       <header class="hub-head">
-        <div class="brand">${MASCOT_SVG()}<h1 id="hub-title" class="title display">Math <span>Sprints</span></h1></div>
+        <div class="brand" data-brand>${MASCOT_SVG()}<h1 id="hub-title" class="title display">Math <span>Sprints</span></h1></div>
         ${Wallet.html()}
       </header>
       <nav class="hub-actions" aria-label="Main menu">
@@ -2466,13 +2743,25 @@ Screens.hub = () => {
         <button class="icon-btn" data-action="sfx" aria-pressed="${s.settings.sfx}" aria-label="Sound effects">${s.settings.sfx ? '🔊' : '🔇'}</button>
         <button class="icon-btn hold-btn" data-hold="settings" aria-label="Grown-ups settings (press and hold)"><span aria-hidden="true">⚙️</span><svg class="hold-ring" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="23"/></svg></button>
       </nav>
-      <p class="hub-tag">Pick your times table, champ!</p>
-      <p class="hub-tag" data-perfect-progress>Perfect ${CONFIG.LEVELS.filter(n => s.levels[n].perfect).length}/${CONFIG.LEVELS.length} · Get 40/40 before time runs out without power-ups. +${CONFIG.PERFECT_LEVEL_BONUS} stars the first time!</p>
+      <section class="panel explorer" aria-label="Explorer progress">
+        <p data-rank><span class="avatar" role="img" aria-label="${Profile.avatar.name}">${Profile.avatar.icon}</span>
+          Rank ${rank.number} · ${rank.title} · ${rank.xp} XP</p>
+        <progress value="${rank.progress}" max="1" aria-label="Next Explorer Rank"></progress>
+        <p>${rank.next === null ? 'Maximum Rank! Every correct answer still earns XP.' : `${rank.next - rank.xp} XP to next Rank`} · XP tracks effort, not mastery.</p>
+        <p data-savings-goal>${goal ? `Saving for ${goal.icon} ${goal.name} · ${Math.min(Profile.points, goal.cost)}/${goal.cost} stars · ${Math.max(0, goal.cost - Profile.points)} more needed` : 'Collection complete! All paid cosmetics owned.'}</p>
+        ${goal ? `<progress value="${Math.min(Profile.points, goal.cost)}" max="${goal.cost}" aria-label="Cosmetic savings"></progress>` : ''}
+      </section>
+      <p class="hub-tag" data-cleared-progress>Tables cleared ${CONFIG.LEVELS.filter(n => s.levels[n].cleared).length}/9
+        · <span data-perfect-progress>Perfect ${CONFIG.LEVELS.filter(n => s.levels[n].perfect).length}/9</span></p>
+      <section class="panel explorer recommendation" aria-label="Next table milestone">
+        <p data-next-table>${recommendation.text}</p><button class="btn btn-good" data-action="recommended">Play</button>
+      </section>
       <ol class="level-grid" aria-label="Levels">${CONFIG.LEVELS.map(levelCardHTML).join('')}</ol>
       <section class="panel" style="margin-top:18px;padding:16px" aria-label="Master level">
         <h2 class="display">Master · longest streak</h2>
-        <p>Mix all nine tables. The first mistake ends the run. No timer, stars or power-ups.</p>
+        <p>Mix all nine tables. The first mistake ends the run. No timer or power-ups. Earn 10 XP per correct answer.</p>
         <p data-master-best>Best streak: ${s.master.best}</p>
+        <p data-master-goal>${masterGoalText()}</p>
         <button class="btn btn-good" data-action="master">Play Master</button>
         <button class="btn" data-action="leaderboard">Local leaderboard</button>
       </section>
@@ -2484,13 +2773,24 @@ Screens.hub = () => {
   }
 
   el.addEventListener('click', e => {
+    if (e.target.closest('[data-brand]')) {
+      if (resetOpen || UI.top()) { brandTaps = []; return; }
+      const now = performance.now();
+      brandTaps = brandTaps.filter(at => now - at <= 2500);
+      brandTaps.push(now);
+      if (brandTaps.length === 6) { brandTaps = []; requestFullReset(); }
+      return;
+    }
     const t = e.target.closest('[data-action],[data-level]');
     if (!t) return;
     AudioEngine.play('tap');
     if (t.dataset.level) { openLevelSheet(Number(t.dataset.level)); return; }
     const action = t.dataset.action;
     if (action === 'shop') App.go('shop');
-    else if (action === 'master') App.go('play', { mode: 'master' });
+    else if (action === 'recommended') {
+      const { mode, level } = nextTableMilestone();
+      App.go('play', { mode, level });
+    } else if (action === 'master') App.go('play', { mode: 'master' });
     else if (action === 'leaderboard') App.go('leaderboard');
     else if (action === 'music') {
       const on = !Profile.state.settings.music;
@@ -2546,7 +2846,11 @@ Screens.masterResults = ({ summary }) => {
     <h1 class="res-title display">${summary.record.newBest ? 'New best streak!' : 'Master streak finished'}</h1>
     <p class="res-score" data-master-streak>${summary.bestStreak}<small> in a row</small></p>
     <p>Best: ${summary.record.best}</p>
+    <div class="res-points">+${summary.points} ⭐</div>
+    ${rewardHTML(summary)}
+    <p data-master-goal>${masterGoalText()}</p>
     <p>Your streak is saved on this browser’s leaderboard.</p>
+    <p>Your rematch fact is ready. Try its related multiplication and division next time.</p>
     <ul class="res-list">${summary.missed.map(({ eq }) => `<li>${EquationFactory.text(eq)}</li>`).join('')}</ul>
     </div><div class="res-actions">
     <button class="btn btn-good" data-go="master">Try Master again</button>
@@ -2571,7 +2875,7 @@ Screens.shop = (params = {}) => {
   const el = document.createElement('section');
   el.className = 'screen scroll shop';
   el.setAttribute('aria-label', 'Shop');
-  let tab = params.tab === 'powers' ? 'powers' : 'themes';
+  let tab = ['powers', 'avatars'].includes(params.tab) ? params.tab : 'themes';
   let busy = false;
 
   function themeCard(t) {
@@ -2587,9 +2891,29 @@ Screens.shop = (params = {}) => {
       <div>
         <h3 class="display">${t.icon} ${Util.esc(t.name)}</h3>
         <p>${Util.esc(t.blurb)}</p>
-        <div class="item-row"><span class="price">${owned ? '<span class="owned">Owned</span>' : (t.cost ? `⭐ ${t.cost}` : 'Free')}</span>${action}</div>
+        <div class="item-row"><span class="price">${owned ? '<span class="owned">Owned</span>' : (t.cost ? `⭐ ${t.cost}` : 'Free')}</span>${action}
+        ${!owned ? goalButton(`theme:${t.id}`) : ''}</div>
       </div>
     </article>`;
+  }
+
+  function goalButton(key) {
+    const pinned = Profile.goal()?.key === key;
+    return `<button class="btn btn-ghost" data-pin="${key}" aria-pressed="${pinned}">${pinned ? 'Savings goal ✓' : 'Save for this'}</button>`;
+  }
+
+  function avatarCard(a) {
+    const owned = Profile.state.economy.avatars.owned.includes(a.id);
+    const active = Profile.avatar.id === a.id;
+    return `<article class="item panel"><div class="pu-icon" aria-hidden="true">${a.icon}</div><div>
+      <h3 class="display">${a.name}</h3>
+      <p>${a.id === 'champion' ? 'Exclusive: earn all 9 Perfect crowns. Never for sale.' : 'Your exploring companion, on the hub and in play.'}</p>
+      <div class="item-row"><span class="price">${owned ? 'Owned' : a.cost ? `⭐ ${a.cost}` : '9 crowns'}</span>
+        ${active ? '<button class="btn btn-good" data-noop="1" aria-disabled="true">✓ Equipped</button>'
+          : owned ? `<button class="btn btn-alt" data-equip-avatar="${a.id}">Equip</button>`
+          : a.cost ? `<button class="btn" data-buy-avatar="${a.id}"${Profile.canAfford(a.cost) ? '' : ' aria-disabled="true"'}>Buy</button>${goalButton(`avatar:${a.id}`)}`
+          : '<span class="owned">Earn to unlock</span>'}
+      </div></div></article>`;
   }
 
   function powerCard(p) {
@@ -2616,17 +2940,19 @@ Screens.shop = (params = {}) => {
       </header>
       <div class="tabs" role="tablist" aria-label="Shop sections">
         <button class="tab" role="tab" id="tab-themes" aria-controls="shop-panel" aria-selected="${tab === 'themes'}" data-tab="themes">🎨 Themes</button>
+        <button class="tab" role="tab" id="tab-avatars" aria-controls="shop-panel" aria-selected="${tab === 'avatars'}" data-tab="avatars">Avatars</button>
         <button class="tab" role="tab" id="tab-powers" aria-controls="shop-panel" aria-selected="${tab === 'powers'}" data-tab="powers">⚡ Power-ups</button>
       </div>
+      <p>Helpers are welcome for practice and table clears. Only the optional Perfect crown requires no helpers.</p>
       <div class="shop-list" id="shop-panel" role="tabpanel" aria-labelledby="tab-${tab}">
-        ${tab === 'themes' ? THEMES.map(themeCard).join('') : POWERUPS.map(powerCard).join('')}
+        ${tab === 'themes' ? THEMES.map(themeCard).join('') : tab === 'avatars' ? AVATARS.map(avatarCard).join('') : POWERUPS.map(powerCard).join('')}
       </div>`;
     el.scrollTop = scroll;
     Wallet.sync();
   }
 
   async function buy(kind, id, btn) {
-    const item = kind === 'theme' ? THEME_BY_ID.get(id) : POWERUP_BY_ID.get(id);
+    const item = kind === 'theme' ? THEME_BY_ID.get(id) : kind === 'avatar' ? AVATAR_BY_ID.get(id) : POWERUP_BY_ID.get(id);
     if (!item) return;
     if (kind === 'theme' && Profile.ownsTheme(id)) { render(); return; }
     if (!Profile.canAfford(item.cost)) {
@@ -2644,7 +2970,7 @@ Screens.shop = (params = {}) => {
     });
     busy = false;
     if (!ok) return;
-    const res = kind === 'theme' ? Profile.buyTheme(id) : Profile.buyPowerup(id);
+    const res = kind === 'theme' ? Profile.buyTheme(id) : kind === 'avatar' ? Profile.buyAvatar(id) : Profile.buyPowerup(id);
     if (!res.ok) {
       AudioEngine.play('nope');
       UI.toast(res.reason === 'funds' ? 'Not enough stars yet!' : res.reason === 'owned' ? 'You already own this!' : 'That could not be bought.', { kind: 'bad' });
@@ -2655,11 +2981,14 @@ Screens.shop = (params = {}) => {
     FX.confetti(70);
     UI.announce(`${item.name} bought. ${Profile.points} stars left.`);
     render();
-    if (kind === 'theme') {
+    if (kind !== 'power') {
       busy = true;
       const equip = await UI.confirm({ title: `${item.name} unlocked!`, message: 'Want to use it right now?', yes: 'Equip it!', no: 'Later', icon: item.icon });
       busy = false;
-      if (equip && Profile.equipTheme(id)) App.applyTheme();
+      if (equip) {
+        if (kind === 'theme' && Profile.equipTheme(id)) App.applyTheme();
+        else if (kind === 'avatar') Profile.equipAvatar(id);
+      }
       render();
     } else {
       UI.toast(`${item.icon} ${Util.esc(item.name)} added! You have ${Profile.count(id)}.`, { kind: 'good' });
@@ -2671,6 +3000,9 @@ Screens.shop = (params = {}) => {
     if (!t || busy) return;
     if (t.dataset.action === 'back') { AudioEngine.play('tap'); App.go('hub'); return; }
     if (t.dataset.action === 'shop' || t.dataset.noop) { AudioEngine.play('tap'); return; }
+    if (t.dataset.pin) { Profile.pinGoal(t.dataset.pin); render(); return; }
+    if (t.dataset.equipAvatar) { Profile.equipAvatar(t.dataset.equipAvatar); render(); return; }
+    if (t.dataset.buyAvatar) { buy('avatar', t.dataset.buyAvatar, t); return; }
     if (t.dataset.tab) {
       AudioEngine.play('tap');
       if (tab !== t.dataset.tab) { tab = t.dataset.tab; el.scrollTop = 0; render(); }
@@ -2823,15 +3155,7 @@ Screens.settings = () => {
       return;
     }
     if (t.dataset.action === 'reset') {
-      const ok = await UI.confirm({ title: 'Erase everything?', message: 'All stars, themes, power-ups and progress on this device will be deleted. This cannot be undone.', yes: 'Erase', no: 'Cancel', icon: '⚠️', danger: true });
-      if (!ok) return;
-      const sure = await UI.confirm({ title: 'Really sure?', message: 'Last chance: tap Erase to start again from zero.', yes: 'Erase', no: 'Keep it', icon: '🗑️', danger: true });
-      if (!sure) return;
-      Profile.reset();
-      App.applyTheme();
-      range = Profile.range;
-      render();
-      UI.toast('Progress erased. Fresh start! 🌱');
+      requestFullReset();
     }
   });
 
@@ -2872,7 +3196,7 @@ Screens.play = ({ mode, level }) => {
       <header class="play-top">
         <button class="icon-btn sm" data-action="exit" aria-label="Leave this run">✖️</button>
         ${isSprint ? '<button class="icon-btn sm" data-action="pause" aria-label="Pause">⏸️</button>' : '<button class="icon-btn sm" data-action="restart" aria-label="Restart this practice" hidden>↻</button>'}
-        <div class="play-title display">${isMaster ? 'Master · mixed tables' : `Level ${level} · ${isSprint ? 'Sprint' : 'Practice'}`}</div>
+        <div class="play-title display"><span class="avatar" role="img" aria-label="${Profile.avatar.name}">${Profile.avatar.icon}</span> ${isMaster ? 'Master · mixed tables' : `Level ${level} · ${isSprint ? 'Sprint' : 'Practice'}`}</div>
         ${isSprint ? `
           <div class="timer" data-timer hidden aria-hidden="true">
             <i class="timer-fill" data-ring></i>
@@ -3292,7 +3616,7 @@ Screens.play = ({ mode, level }) => {
         fitEquation();
       }
       if (justFailed) {
-        subEl.innerHTML = '<span class="badge fail">💔 Perfect run lost. Keep going for ⭐ or tap ↻</span>';
+        subEl.innerHTML = '<span class="badge rematch">Rematch saved! Keep earning stars + XP, or tap ↻</span>';
         if (restartBtn) restartBtn.hidden = false;
       } else {
         subEl.innerHTML = `<span class="badge fact">${EquationFactory.text(eq)}</span>`;
@@ -3421,7 +3745,7 @@ Screens.results = ({ summary }) => {
       celebrate = s.record.justUnlocked ? 'unlock' : 'perfect';
     } else {
       title = s.correct >= 8 ? 'So close! 💪' : s.correct >= 5 ? 'Good effort! 🌟' : 'Keep practicing! 🚀';
-      sub = 'A perfect run needs 10/10. Let’s go again!';
+      sub = `${Util.plural(s.missed.length, 'fact ready', 'facts ready')} for a rematch. Your earned stars and XP stay! Aim for 10/10 next time.`;
     }
     extra += `<div class="res-stats"><span><span class="pips" aria-hidden="true">${pipsHTML(done)}</span> ${unlocked ? 'Practice complete ✅' : `Perfect practices ${done}/${CONFIG.PERFECT_RUNS_TO_UNLOCK}`}</span>`;
     if (s.reviewCleared) extra += `<span>🏅 ${Util.plural(s.reviewCleared, 'rematch', 'rematches')} cleared</span>`;
@@ -3443,6 +3767,7 @@ Screens.results = ({ summary }) => {
     if (s.record.firstRun) sub = '🏆 Your first sprint score!';
     else if (s.record.newBest) sub = `🏆 New best! (was ${s.record.prevBest})`;
     else sub = `Best: ${L.sprintBest}/${CONFIG.SPRINT_LENGTH}`;
+    if (s.correct < s.total) sub += ` ${s.missed.length ? `${Util.plural(s.missed.length, 'fact ready', 'facts ready')} for a rematch.` : 'Keep building speed one fact at a time.'} Your earned stars and XP stay!`;
     if (perfect || s.record.newBest || s.record.firstRun) celebrate = perfect ? 'unlock' : 'perfect';
     extra += `<div class="res-stats">
       <span>🎯 ${accuracy}% right</span>
@@ -3451,7 +3776,7 @@ Screens.results = ({ summary }) => {
       ${s.bestStreak >= 3 ? `<span>🔥 Best streak ${s.bestStreak}</span>` : ''}
       ${s.record.newBestTime ? '<span>🚀 Fastest 40/40 sprint!</span>' : ''}
       ${L.perfect ? '<span class="badge ready" data-perfect-badge>Perfect level</span>' : ''}
-      ${s.record.bonus ? `<span>+${s.record.bonus} stars for your first Perfect!</span>` : ''}
+      ${s.record.justCleared ? '<span>Adventure table cleared!</span>' : ''}
     </div>`;
     actions = `<button class="btn btn-big btn-good" data-go="sprint" data-autofocus>⚡ Sprint again</button>
       <button class="btn btn-alt" data-go="practice">▶ Practice</button><button class="btn" data-go="hub">🏠 Levels</button>`;
@@ -3464,6 +3789,7 @@ Screens.results = ({ summary }) => {
       <p class="res-sub">${sub}</p>
       <div class="res-score" aria-label="${s.correct} out of ${s.total}">${s.correct}<small>/${s.total}</small></div>
       <div class="res-points">+${s.points} ⭐</div>
+      ${rewardHTML(s)}
       ${extra}
       ${missed ? `<p class="res-list-title">${s.mode === 'practice' ? 'Rematch list — remember these:' : 'Facts to remember:'}</p><ul class="res-list">${missed}</ul>` : ''}
     </div>
@@ -3504,7 +3830,21 @@ const App = {
   host: document.getElementById('screen-host'),
   externalChange: false,
 
+  syncReset() {
+    if (Store.isCurrent()) return true;
+    if (this.screen?.session) this.screen.session.abandon();
+    this.externalChange = false;
+    Profile.load();
+    this.applyTheme();
+    AudioEngine.setSfx(Profile.state.settings.sfx);
+    AudioEngine.setMusic(Profile.state.settings.music);
+    this.go('hub');
+    UI.toast('Progress was reset in another tab. Fresh start!', { ms: 3500 });
+    return false;
+  },
+
   go(name, params = {}) {
+    if (!this.syncReset()) return;
     const factory = Screens[name];
     if (!factory) return;
     UI.closeAll();
@@ -3518,7 +3858,13 @@ const App = {
       Profile.reloadFromStorage();
       this.applyTheme();
     }
+    const generation = Store.generation;
     const screen = factory(params);
+    if (generation !== Store.generation || !Store.isCurrent()) {
+      screen.destroy();
+      if (this.syncReset()) this.go('hub');
+      return;
+    }
     this.screen = screen;
     document.body.classList.toggle('playing', name === 'play');
     screen.el.setAttribute('tabindex', '-1');
@@ -3553,17 +3899,27 @@ const App = {
     AudioEngine.setSfx(Profile.state.settings.sfx);
     AudioEngine.setMusic(Profile.state.settings.music);
     Bus.on('profile:change', () => Wallet.sync());
+    Bus.on('profile:reset-external', () => this.syncReset());
     Bus.on('storage:warning', () => UI.toast('⚠️ Progress could not be saved on this device.', { kind: 'bad', ms: 3500 }));
     // Browsers only allow audio after a user gesture; iOS counts pointerup/touchend/click, not pointerdown.
     const unlockAudio = () => AudioEngine.unlock();
     ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'].forEach(ev => window.addEventListener(ev, unlockAudio, { capture: true, passive: true }));
+    ['pointerdown', 'click', 'keydown'].forEach(ev => document.addEventListener(ev, e => {
+      if (!this.syncReset()) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    }, { capture: true }));
     document.addEventListener('visibilitychange', () => {
+      if (!this.syncReset()) return;
       AudioEngine.onVisibility(document.hidden);
       if (document.hidden && this.screen && this.screen.onHidden) this.screen.onHidden();
     });
-    window.addEventListener('pagehide', () => { if (Profile.state) Store.write(Profile.state); });
+    // Mutations persist immediately. Never flush a potentially stale tab on exit.
+    window.addEventListener('pageshow', () => this.syncReset());
     window.addEventListener('storage', e => {
-      if (e.key !== Store.KEY) return;
+      if (!this.syncReset()) return;
+      if (e.key !== Store.dataKey) return;
       if (this.screen && this.screen.name === 'play') { this.externalChange = true; return; }
       if (Profile.reloadFromStorage()) {
         this.applyTheme();
@@ -3579,7 +3935,7 @@ const App = {
 };
 
 window.MathSprints = Object.freeze({
-  version: '1.0.0', CONFIG, THEMES, POWERUPS, Util, RNG, Bus, Store, Profile,
+  version: '2.0.0', CONFIG, THEMES, AVATARS, COSMETICS, RANKS, MASTER_MILESTONES, POWERUPS, Util, RNG, Bus, Store, Profile,
   EquationFactory, Learning, ReviewQueue, GameSession, SprintTimer, Delay, AudioEngine, UI, App,
 });
 Object.defineProperty(window, 'UserPoints', { get: () => Profile.points, configurable: true });
